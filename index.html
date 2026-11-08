@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Оперативный журнал смены</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bad+Script&family=Caveat:wght@500&family=Marck+Script&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#cfc3ae;--fg:#2a2417;--card:#fbf7ec;--acc:#7a4b1e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2b2823;--fg:#eee6d6;--card:#3a362f;--acc:#e0b27a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#2b2823;--fg:#eee6d6;--card:#3a362f;--acc:#e0b27a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;min-height:100vh}
+main{max-width:1124px;margin:0 auto;padding:12px}
+h1{font:600 20px Georgia,serif;margin:6px 0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+button,select,input,textarea{font:inherit}
+button{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--acc)}
+select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;background:#fffdf6;color:#222}
+.card{background:var(--card);border-radius:8px;padding:12px;margin:10px 0}
+.hint{opacity:.75}
+canvas{background:#fffdf6;border:1px dashed #8a7d66;border-radius:6px;touch-action:none;width:100%;max-width:560px;height:auto;display:block}
+.g{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.g input.n{width:64px}
+.ink{display:inline-block;width:26px;height:26px;border-radius:50%;border:3px solid transparent;cursor:pointer;vertical-align:middle}
+.ink.on{border-color:#e8a317}
+dialog{background:var(--card);color:var(--fg);border:0;border-radius:10px;max-width:640px;width:94%}
+table{width:100%;border-collapse:collapse}td{padding:4px;border-bottom:1px solid #8884}
+#wrap{position:relative;margin:10px auto}
+.book{display:flex;transform-origin:top left}
+.page{width:var(--W);height:var(--H);background:#f6ecd6;color:#222;position:relative;overflow:hidden}
+.page.L{border-radius:8px 0 0 8px;box-shadow:inset -22px 0 18px -16px #0007}
+.page.R{border-radius:0 8px 8px 0;box-shadow:inset 22px 0 18px -16px #0007}
+.page.S{border-radius:8px}
+.ph{height:var(--rh);margin:12px 22px 0;display:grid;grid-template-columns:var(--c1) 1fr var(--c3);background:#eadcbc;border:1px solid #5c5240;font:600 10px/1.05 Georgia,serif;text-align:center}
+.ph div{padding:1px 3px;border-right:1px solid #5c5240;display:flex;align-items:center;justify-content:center}
+.ph div:last-child{border:0}
+.pb{position:relative;margin:0 22px;height:calc(36*var(--rh));background:repeating-linear-gradient(transparent 0 27px,#8da2b8 27px 28px)}
+.pb:before,.pb:after{content:"";position:absolute;top:0;bottom:0;border-left:1px solid #8da2b8;pointer-events:none}
+.pb:before{left:var(--c1)}.pb:after{right:var(--c3)}
+.pn{position:absolute;bottom:20px;left:0;right:0;text-align:center;font:14px Georgia,serif;color:#5c5240}
+.row{display:grid;grid-template-columns:var(--c1) 1fr var(--c3);position:relative;z-index:1}
+.row>div{padding:0 8px;line-height:var(--rh);font-size:var(--fs);min-height:var(--rh)}
+.row .t{text-align:center;padding:0 2px}
+.row .tx{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}
+.row .vz{font-size:18px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ctr .tx{text-align:center}
+.row.mine{cursor:pointer}.row.mine:hover .tx{background:#ffe9a855}.pick{position:absolute;left:0;right:0;height:28px;background:#ffd54a44;outline:2px solid #e8a317;pointer-events:none}
+.mine .sg img{pointer-events:auto;cursor:pointer}.ow .tp{cursor:pointer}
+#sd{max-width:880px}
+#pvi{--rh:28px;--c1:100px;--c3:150px;--fs:24px;width:750px;transform-origin:top left;color:#222;background:#f6ecd6}
+#pvi .sg img{pointer-events:auto;cursor:move;touch-action:none;outline:1px dashed #e8a317;background:#ffe9a833}
+.sg{display:inline-block;width:0;height:var(--rh);vertical-align:top;position:relative}
+.sg img{position:absolute;max-width:none;pointer-events:none;z-index:3}
+#meas{position:absolute;left:-9999px;top:0;visibility:hidden;width:var(--W)}
+.cover{width:var(--W);height:var(--H);background:linear-gradient(135deg,#2f1a16,#6b2c22);color:#e8c77a;border-radius:8px 18px 18px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;cursor:pointer;box-shadow:inset 0 0 0 12px #0003;text-align:center;font-family:Georgia,serif}
+.cover h2{margin:0;font-size:40px;letter-spacing:2px;padding:0 40px;overflow-wrap:anywhere}
+.label{background:#f6ecd6;color:#222;padding:14px 34px;border-radius:3px;font-size:22px;line-height:34px}
+.tp{background:#eadfbd}
+.tp .mid{position:absolute;top:470px;left:40px;right:40px;text-align:center}.tp .tt{font:bold 30px Georgia,serif;letter-spacing:1px;color:#111}.tp .iv{font-size:34px;line-height:46px;margin-top:14px}
+.tp .hw{position:absolute;font-size:34px;line-height:46px}
+sub,sup{font-size:.62em;line-height:0}
+.row.big>div{font-size:28px}
+.shelf{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0}
+.jc{width:170px;height:236px;border-radius:6px 12px 12px 6px;padding:16px 12px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;box-shadow:inset 7px 0 0 #0004,3px 4px 10px #0005;font-family:Georgia,serif;text-align:center;position:relative}
+.jc b{font-size:17px;letter-spacing:.5px;line-height:1.25;overflow-wrap:anywhere}
+.jc .lb{background:#f6ecd6;color:#222;padding:6px;border-radius:2px;font-size:12px}
+.jc .gear{position:absolute;top:4px;right:6px;background:#0004;color:inherit;padding:2px 7px}
+button.chip.on{background:var(--acc);color:#fff}
+.nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:8px 0}
+label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=range]{flex:1}
+</style></head><body><main>
+<div class="bar"><h1>📓 Оперативный журнал смены</h1><div id="bar"></div></div>
+<div id="msg" class="hint"></div>
+<div id="auth" class="card" hidden>
+ <b>Вхід / реєстрація</b>
+ <div class="g"><input id="ae" type="email" placeholder="Пошта" style="flex:1;min-width:180px"><input id="ap" type="password" placeholder="Пароль (від 6 символів)" style="flex:1;min-width:160px"></div>
+ <div class="g"><input id="an" placeholder="Прізвище І.О. (лише для реєстрації)" style="flex:1;min-width:180px"><select id="ad"></select></div>
+ <div class="g"><button id="ain">Увійти</button><button class="ghost" id="aup">Зареєструватися</button></div>
+ <p class="hint">Після реєстрації власник журналу підтверджує вас і призначає посаду.</p>
+</div>
+<div id="reg" class="card" hidden>
+ <b>Завершення реєстрації: ваш підпис</b>
+ <div class="g"><input id="rn" placeholder="Фамилия И.О." style="flex:1;min-width:180px"></div>
+ <p class="hint">Нарисуйте свою подпись (мышью или пальцем):</p>
+ <canvas id="sg" width="560" height="280"></canvas>
+ <div class="g"><button class="ghost" id="sgc">Очистить</button><button id="rok">Зарегистрироваться</button></div>
+</div>
+<div id="app" hidden>
+ <div id="lib">
+  <div class="g" id="depts"></div>
+  <div class="g"><button id="jnew" hidden>＋ Новый журнал</button></div>
+  <div id="shelf" class="shelf"></div>
+ </div>
+ <div id="jv" hidden>
+ <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b></div>
+ <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
+ <div id="wrap"><div class="book" id="book"></div><div id="meas"></div></div>
+ <div class="nav"><button id="prev">◀</button><span id="pinfo" class="hint"></span><button id="next">▶</button></div>
+ <p id="ownh" class="hint" hidden>Нажмите на свою запись или заголовок смены, чтобы изменить или удалить. Чтобы писать с определённой строки — нажмите на пустую клетку листа.</p>
+ <datalist id="plist"></datalist><datalist id="ulist"></datalist>
+ <p id="vo" class="hint" hidden>Режим просмотра: запись доступна только членам текущей смены.</p>
+ <div id="accp" class="card" hidden><b>Приём смены</b>
+  <p id="accm" class="hint"></p><button id="acc">Подтвердить</button></div>
+ <div id="composer" class="card" hidden>
+  <div class="hint" id="cinfo"></div>
+  <div class="g">Ручка: <span id="inks"></span> &nbsp; Время:
+   <select id="th"></select>:<select id="tmn"></select>:<select id="ts"></select> <button class="ghost" id="now">сейчас</button></div>
+  <div class="g">Место записи: <b id="pickt">продолжение после предыдущей записи</b> <button class="ghost" id="pickc" hidden>сбросить</button></div>
+  <textarea id="tx" rows="3" style="width:100%" placeholder="Текст записи… (Enter — новая строка, пробелы сохраняются)"></textarea>
+  <div class="g"><button class="ghost fmt" data-t="tx" data-k="_">xₙ нижний индекс</button><button class="ghost fmt" data-t="tx" data-k="^">xⁿ верхний индекс</button><span class="hint">пример: ^{235}_{92}U</span></div>
+  <div class="g"><button class="ghost" id="vzb">+ Виза / замечание</button></div>
+  <div id="vzbox" hidden><textarea id="vz" rows="2" style="width:100%" placeholder="Визы, замечания…"></textarea>
+   <div class="g"><button class="ghost" id="vzc">Отмена</button></div></div>
+  <div class="g"><button id="add">Добавить запись</button>Ответственный по смене: <select id="rsp"></select><button class="ghost" id="close">Завершить смену</button></div>
+ </div>
+</div>
+</div>
+<dialog id="nd"><b id="ndt">Новая смена</b>
+ <div class="g">Число: <select id="d"></select>.<select id="m"></select>.19<select id="y"></select></div>
+ <div class="g">Смена №<input class="n" id="num"> с <select id="fh"></select>:<select id="fm"></select> до <select id="uh"></select>:<select id="um"></select></div>
+ <b>Состав смены</b><div id="crew"></div>
+ <div class="g"><button class="ghost" id="plus">＋ добавить (должность и Ф.И.О.)</button></div>
+ <div class="g"><button id="mk">Создать</button><button class="ghost" id="nc">Отмена</button></div>
+</dialog>
+<dialog id="od"><b>Управление</b>
+ <p class="hint">Подтверждение пользователей и их должности.</p><div id="users"></div>
+ <p><b>Подразделения (цеха)</b> (каждое с новой строки)</p>
+ <textarea id="dl" rows="4" style="width:100%"></textarea>
+ <div class="g"><button id="dsv">Сохранить подразделения</button></div>
+ <p><b>Список должностей</b> (подсказки для состава смены; каждая с новой строки)</p>
+ <textarea id="pl" rows="5" style="width:100%"></textarea>
+ <div class="g"><button id="ps">Сохранить должности</button><button class="ghost" id="oc">Закрыть</button></div>
+</dialog>
+<dialog id="ed"><b>Редактирование записи</b>
+ <div class="g">Время: <select id="eh"></select>:<select id="em"></select>:<select id="es"></select></div>
+ <div id="etxrow"><textarea id="etx" rows="4" style="width:100%" placeholder="Текст записи"></textarea></div>
+ <div class="g"><button class="ghost fmt" data-t="etx" data-k="_">xₙ</button><button class="ghost fmt" data-t="etx" data-k="^">xⁿ</button><span class="hint">индексы: _{0}, ^{2}</span></div>
+ <textarea id="evz" rows="2" style="width:100%" placeholder="Визы, замечания"></textarea>
+ <div class="g">Страница <input class="n" id="epp" type="number" min="1" max="100"> строка <input class="n" id="epr" type="number" min="1" max="36"> <button class="ghost" id="esg">Подпись…</button></div>
+ <div class="g"><button id="esv">Сохранить</button><button class="ghost" id="edel">Удалить запись</button><button class="ghost" id="ecl">Отмена</button></div>
+</dialog>
+<dialog id="jd"><b id="jdt">Журнал</b>
+ <div class="g"><input id="jn" placeholder="Название журнала" style="flex:1"></div>
+ <div class="g"><select id="jdp"></select> страниц: <input id="jpg" type="number" min="1" max="500" class="n"></div>
+ <div class="g"><input id="tinv" placeholder="Инв. № …" style="flex:1"><input id="tunit" placeholder="Подразделение (надпись на титуле)" style="flex:1"></div>
+ <div class="g"><input id="tst" placeholder="начат: дд.мм.гг" style="flex:1"><input id="ten" placeholder="окончен: дд.мм.гг" style="flex:1"></div>
+ <div class="g">Цвет обложки: <span id="jcs"></span> <input type="color" id="jcol"></div>
+ <div class="g">Подпись на титульном листе от: <select id="jsb"></select></div>
+ <div class="g"><button id="jsv">Сохранить</button><button class="ghost" id="jdel">Удалить журнал</button><button class="ghost" id="jcl">Закрыть</button></div>
+</dialog>
+<dialog id="xd"><b>Удаление записей</b>
+ <p class="hint">Только для владельца. Действие необратимо.</p>
+ <div class="g"><select id="xs" style="flex:1"></select><button class="ghost" id="xsd">Удалить смену с записями</button></div>
+ <div class="g"><button class="ghost" id="xall">Удалить ВСЕ записи журнала</button><button class="ghost" id="xcl">Закрыть</button></div>
+</dialog>
+<dialog id="hd"><b id="hdt"></b>
+ <div class="g"><input id="hl" placeholder="Текст (напр. Смену сдал:)" style="flex:1"></div>
+ <div class="g"><input id="hn" placeholder="Фамилия И.О." style="flex:1"></div>
+ <div class="g" id="hur" hidden>Подпись от: <select id="hu"></select></div>
+ <div class="g"><button id="hsv">Сохранить</button><button class="ghost" id="hcl">Отмена</button></div>
+</dialog>
+<dialog id="sd"><b>Подпись</b>
+ <p class="hint">Перетащите подпись мышью в нужное место. Размер — ползунком.</p>
+ <div id="pvw" style="overflow:hidden;border-radius:6px"><div id="pvi"></div></div>
+ <label class="r">Размер <input type="range" id="sds" min="25" max="140"></label>
+ <div class="g" id="sdur" hidden>Чья подпись: <select id="sdu"></select></div>
+ <label class="r"><input type="checkbox" id="sdn"> не показывать подпись</label>
+ <div class="g"><button id="sdv">Сохранить</button><button class="ghost" id="sdr">Сбросить положение</button><button class="ghost" id="sdc">Отмена</button></div>
+</dialog>
+<script>
+const FONTS=["Caveat","Marck Script","Bad Script"],INKS=["#1b2a9b","#2d5be3","#0a6bb0"],DEF=["НСС","НСРЦ","НСЭЦ","Оператор"],DEPT=["РЦ-2","ЭЦ","ТЦ","ООТиТБ"],COLORS=["#6b2c22","#1f4e79","#2e6b3a","#4a3a6b","#7a5a1e","#333b45"];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+let jrs=[],allS=[],allE=[],curJ=null,dept="*",depts=[],J={},pickAt=null,placed={},curK=1,shEd=null,db,user,uid,isOwner=false,prof={},roles={},positions=[],shifts=[],entries=[],ink=0,closed=true,pg=1,nPages=100,used=1,title={};
+const P=()=>{const p=positions.length?positions:DEF;return p.includes("НСС")?p:["НСС",...p]};
+const rank=id=>Object.keys(prof).sort((a,b)=>(prof[a].createdAt||0)-(prof[b].createdAt||0)).indexOf(id);
+const fontOf=id=>{const f=prof[id]?.font;return FONTS[(f!=null?+f:Math.max(0,rank(id)))%FONTS.length]};
+const pickFont=()=>{const c=FONTS.map(()=>0);Object.keys(prof).forEach(i=>c[FONTS.indexOf(fontOf(i))]++);return c.indexOf(Math.min(...c))};
+const approved=()=>isOwner||!!roles[uid]?.approved;
+const toast=t=>{$("msg").textContent=t;setTimeout(()=>{if($("msg").textContent===t)$("msg").textContent=""},5000)};
+const safe=async f=>{try{await f()}catch(e){toast("Ошибка: "+(e.message||e.code||e))}};
+const latest=()=>[...shifts].sort((a,b)=>a.createdAt-b.createdAt).pop();
+const maxp=()=>+J.pages||100;
+const full=()=>used>maxp()&&(toast(`Журнал заполнен (${maxp()} стр.)`),true);
+const opts=n=>Array.from({length:n},(_,i)=>`<option>${pad(i)}</option>`).join("");
+["th","eh"].forEach(i=>$(i).innerHTML=opts(24));["tmn","ts","em","es"].forEach(i=>$(i).innerHTML=opts(60));
+const setNow=()=>{const d=new Date();$("th").value=pad(d.getHours());$("tmn").value=pad(d.getMinutes());$("ts").value=pad(d.getSeconds())};
+const getT=()=>`${$("th").value}:${$("tmn").value}:${$("ts").value}`;
+const nowS=()=>{const d=new Date();return`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+$("now").onclick=setNow;setNow();
+const cv=$("sg"),cx=cv.getContext("2d");let drawing=false,drew=false;
+cx.lineWidth=3.5;cx.lineCap="round";cx.lineJoin="round";cx.strokeStyle="#1b2a9b";
+const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+cv.onpointerdown=e=>{drawing=true;drew=true;cv.setPointerCapture(e.pointerId);cx.beginPath();cx.moveTo(...pt(e))};
+cv.onpointermove=e=>{if(drawing){cx.lineTo(...pt(e));cx.stroke()}};
+cv.onpointerup=()=>drawing=false;
+$("sgc").onclick=()=>{cx.clearRect(0,0,cv.width,cv.height);drew=false};
+$("rok").onclick=()=>safe(async()=>{
+ const name=$("rn").value.trim();if(!name||!drew)return toast("Укажите фамилию и нарисуйте подпись");
+ await db.doc("profiles/"+uid).set({name,sig:cv.toDataURL("image/png"),createdAt:Date.now(),font:pickFont()});});
+$("inks").innerHTML=INKS.map((c,i)=>`<span class="ink" data-i="${i}" style="background:${c}"></span>`).join(" ");
+$("inks").onclick=e=>{if(e.target.dataset.i){ink=+e.target.dataset.i;paintInk()}};
+const paintInk=()=>[...$("inks").children].forEach((s,i)=>s.classList.toggle("on",i===ink));paintInk();
+function renderBar(){
+ const p0=prof[uid],p=p0&&p0.sig?p0:null,b=$("bar");
+ $("reg").hidden=!!p;$("app").hidden=!p;$("lib").hidden=!!curJ;$("jv").hidden=!curJ;
+ $("plist").innerHTML=P().map(x=>`<option value="${esc(x)}">`).join("");$("ulist").innerHTML=Object.keys(prof).map(i=>`<option value="${esc(prof[i].name)}">`).join("");
+ if(!p){b.innerHTML="";return}
+ b.innerHTML=`<span class="hint">${esc(p.name)}${roles[uid]?.position?" · "+esc(roles[uid].position):""}</span> `+(isOwner?`<button class="ghost" id="ob">⚙ Управление</button>`:"")+` <button class="ghost" id="lo">Выйти</button>`;$("lo").onclick=()=>sb.auth.signOut();
+ if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("dl").value=(depts.length?depts:DEPT).join("\n");renderUsers();$("od").showModal()};
+ $("ownh").hidden=!approved();$("jset").hidden=!isOwner;$("xb").hidden=!isOwner;$("jnew").hidden=!isOwner;
+ if(!approved())$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";
+ else if($("msg").textContent.startsWith("Ожидайте"))$("msg").textContent="";
+ $("newb").hidden=!approved();
+}
+const nm=x=>String(x||"").toLowerCase().replace(/[\s.,]/g,"");
+function onShift(){const l=latest();return !!(l&&!l.closed&&l.crew.some(c=>c.uid&&c.uid===uid))}
+const canWrite=()=>isOwner||(approved()&&onShift());
+const canEdit=by=>isOwner||(by===uid&&canWrite());
+const canMine=by=>isOwner||(!!by&&by===uid&&approved());
+const shade=(h,a)=>{const n=parseInt(h.slice(1),16),c=x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,"0");return"#"+[(n>>16)+a,(n>>8&255)+a,(n&255)+a].map(c).join("")};
+const onC=h=>{const n=parseInt(h.slice(1),16);return((n>>16)*.3+(n>>8&255)*.59+(n&255)*.11)>150?"#222":"#f1e2b8"};
+const cbg=c=>{c=c||COLORS[0];return`background:linear-gradient(135deg,${c},${shade(c,-45)});color:${onC(c)}`};
+const rich=x=>esc(x).replace(/_\{([^{}]*)\}/g,"<sub>$1</sub>").replace(/\^\{([^{}]*)\}/g,"<sup>$1</sup>");
+const tsec=t=>{const[a,b,c]=String(t||"0:0:0").split(":").map(Number);return(a||0)*3600+(b||0)*60+(c||0)};
+const ekey=(e,sh)=>{const v=tsec(e.time),h0=sh&&sh.fh!=null?+sh.fh:0;return v+(Math.floor(v/3600)<h0?86400:0)};
+const row=(st,t,tx,vz,cls,attrs)=>`<div class="row c ${cls||""}" ${attrs||""} style="${st}"><div class="t">${t}</div><div class="tx">${tx}</div><div class="vz">${vz||""}</div></div>`;
+const SP=`<div class="row"><div></div><div></div><div></div></div>`;
+const sgOf=(u,e)=>{if(!u?.sig||e?.nosg)return"";const h=e?.sgS||60;
+ return`<span class="sg"><img src="${u.sig}" alt="" style="height:${h}px;left:${10+(e?.sgX||0)}px;top:calc(var(--rh)/2 - ${h/2}px + ${e?.sgY||0}px)"></span>`};
+const fmt=s=>s?`${s.d}.${s.m}.${s.y}`:"";
+const stOf=(u,k)=>`font-family:'${fontOf(u)}';color:${INKS[k||0]}`;
+const shg=(s,w)=>({sgS:s[w+"SgS"],sgX:s[w+"SgX"],sgY:s[w+"SgY"],nosg:s[w+"NoSg"]});
+const hm=(h,m,f)=>h==null?`${esc(f)}<sup>00</sup>`:`${+h}<sup>${esc(m)}</sup>`;
+function blocks(){
+ const out=[],A=(m,g,at,id)=>out.push({m,g,at,id});
+ [...shifts].sort((a,b)=>a.createdAt-b.createdAt).forEach(s=>{
+  const st=stOf(s.by,s.ink),sa=`data-s="${s.id}"`,mc=canEdit(s.by)?"mine":"";
+  A(row(st,`${esc(s.d)}.${esc(s.m)}.${esc(s.y)}`,`Смена №${esc(s.num)} с ${hm(s.fh,s.fm,s.f)} до ${hm(s.uh,s.um,s.to)}`,"","ctr "+mc,sa),1,s.at);
+  s.crew.forEach(c=>A(row(st,"",`${esc(c.pos)} ${esc(c.name)}`,"","ctr "+mc,sa),0));
+  entries.filter(e=>e.shift===s.id).sort((a,b)=>ekey(a,s)-ekey(b,s)||a.ts-b.ts).forEach(e=>
+   A(row(stOf(e.uid,e.ink),esc(e.time),(e.type==="sign"?"":rich(e.text))+sgOf(prof[e.sgBy||e.uid],e),rich(e.vz||""),canEdit(e.uid)?"mine":"",`data-e="${e.id}"`),1,e.at,e.id));
+  if(s.closed){
+   A(row(stOf(s.handBy,s.handInk),"",`${esc(s.handLabel||"Смену сдал:")} ${esc(s.handName||prof[s.handBy]?.name)}`+sgOf(prof[s.handBy],shg(s,"hand")),"","ctr big "+(canMine(s.handBy)?"mine":""),`data-s="${s.id}" data-h="hand"`),1);
+   A(row(stOf(s.accBy||s.handBy,s.accBy?s.accInk:s.handInk),"",`${esc(s.accLabel||"Смену принял:")} ${s.accBy?esc(s.accName||prof[s.accBy]?.name):""}`+(s.accBy?sgOf(prof[s.accBy],shg(s,"acc")):""),"","ctr big "+((isOwner||(s.accBy&&canMine(s.accBy)))?"mine":""),`data-s="${s.id}" data-h="acc"`),0);
+  }
+ });
+ return out;
+}
+function titlePage(){
+ const st=stOf(title.by||uid,0),o=prof[title.signBy];
+ return `<div class="tp" style="position:absolute;inset:0;${st}"><div class="mid"><div class="tt">${esc(title.name||"ОПЕРАТИВНЫЙ ЖУРНАЛ")}</div><div class="iv">Инв. № ${title.inv?esc(title.inv):"____________"}</div></div>
+ <div class="hw" style="top:690px;right:50px">${esc(title.unit||"")}</div>
+ <div class="hw" style="top:840px;left:60px">начат: ${title.start?esc(title.start):"____________"}<br>окончен: ${esc(title.end||"")}</div>
+ ${title.signBy&&o?.sig?`<img src="${o.sig}" alt="" style="position:absolute;right:70px;top:900px;height:90px">`:""}</div>`;
+}
+const PW=794,PH=1123;
+function renderBook(){
+ if(!curJ)return;
+ $("jname").textContent=J.name||"";
+ const wide=innerWidth>=900,bw=Math.min(1100,innerWidth-24);
+ const stageW=closed?PW:(wide?2*PW:PW),k=Math.min(1,bw/stageW);
+ $("wrap").className=isOwner?"ow":"";curK=k;
+ $("wrap").style.cssText=`--W:${PW}px;--H:${PH}px;--c1:100px;--c3:150px;--fs:24px;--rh:28px;width:${stageW*k}px;height:${PH*k}px`;
+ $("book").style.cssText=`width:${stageW}px;height:${PH}px;transform:scale(${k})`;
+ const bl=blocks(),m=$("meas");
+ m.innerHTML=`<div class="pb" style="height:auto;background:none">${bl.map(b=>b.m).join("")}</div>`;
+ const hs=[...m.querySelectorAll(".row")].map(r=>Math.max(28,Math.ceil(r.offsetHeight/28)*28));
+ const pages=[[]],pe=[];let cur=0;placed={};
+ bl.forEach((b,i)=>{const h=hs[i]/28;
+  let st=cur%36===0?cur:cur+b.g;if(b.at!=null&&b.at>st)st=b.at;
+  if(st%36+h>36)st=(Math.floor(st/36)+1)*36;
+  const p=Math.floor(st/36),r=st%36;while(pages.length<=p)pages.push([]);
+  pages[p].push(SP.repeat(r-(pe[p]||0))+b.m);pe[p]=r+h;cur=st+h;
+  if(b.id)placed[b.id]={p:p+1,r:r+1}});
+ let pk=null;
+ if(pickAt!=null){let st=Math.max(pickAt,cur%36===0?cur:cur+1);if(st%36+1>36)st=(Math.floor(st/36)+1)*36;pk={p:Math.floor(st/36)+1,r:st%36}}
+ $("pickt").textContent=pk?`стр. ${pk.p}, строка ${pk.r+1}`:"продолжение после предыдущей записи";$("pickc").hidden=!pk;
+ used=pages.length;while(pages.length<maxp())pages.push([]);
+ nPages=pages.length;m.innerHTML="";
+ if(used>maxp())$("msg").textContent=`Журнал заполнен: записи вышли за ${maxp()} страниц.`;
+ if(pg>nPages)pg=nPages;if(pg<(isWide()?1:0))pg=isWide()?1:0;
+ const hd=`<div class="ph"><div>Дата и время записи</div><div>Содержание записей в течение смены, о сдаче и приёмке смены</div><div>Визы, замечания и распоряжения</div></div>`;
+ const page=(n,side)=>{
+  if(n===0)return `<div class="page ${side}">${titlePage()}</div>`;
+  if(n>nPages||n<0)return `<div class="page ${side}"></div>`;
+  return `<div class="page ${side}">${hd}<div class="pb" data-p="${n}">${pages[n-1].join("")}${pk&&pk.p===n?`<div class="pick" style="top:${pk.r*28}px"></div>`:""}</div><div class="pn">— ${n} —</div></div>`;
+ };
+ let info;
+ if(closed){
+  $("book").innerHTML=`<div class="cover" id="cv" style="${cbg(J.color)}"><h2>${esc(J.name||"Журнал")}</h2><div class="label">${title.inv?"Инв. № "+esc(title.inv)+"<br>":""}Страниц: ${maxp()}</div><div style="font-size:18px;opacity:.8">нажмите, чтобы открыть</div></div>`;
+  $("cv").onclick=()=>{closed=false;pg=isWide()?1:0;renderBook()};info="Обложка";
+ }else if(isWide()){
+  const l=pg%2?pg-1:pg;
+  $("book").innerHTML=page(l,"L")+page(l+1,"R");info=`Стр. ${l||""}${l?"–":""}${Math.min(l+1,nPages)} из ${nPages}`;
+ }else{$("book").innerHTML=page(pg,"S");info=pg===0?"Титульный лист":`Стр. ${pg} из ${nPages}`}
+ $("pinfo").textContent=info;
+ const l=latest(),ap=approved(),cw=canWrite();
+ $("composer").hidden=!(l&&cw&&!l.closed);
+ $("vo").hidden=!(ap&&!cw&&!(l&&l.closed&&!l.accBy));
+ $("accp").hidden=!(l&&ap&&l.closed&&!l.accBy);
+ if(l){const nms=l.crew.map(c=>c.name),key=nms.join("|");if($("rsp").dataset.k!==key){$("rsp").innerHTML=nms.map(n=>`<option>${esc(n)}</option>`).join("");$("rsp").dataset.k=key}}
+ if(l){$("cinfo").textContent=`Текущая смена: №${l.num} от ${fmt(l)}`;
+  const mine=uid===l.handBy;$("acc").hidden=mine;
+  $("accm").textContent=mine?"Смена завершена. Ожидайте, пока следующая смена перечитает записи и примет её.":"Предыдущая смена завершена. Перечитайте её записи и нажмите «Подтвердить» — ваши Ф.И.О. и подпись проставятся автоматически.";}
+}
+const isWide=()=>innerWidth>=900,leftOf=()=>pg%2?pg-1:pg;
+$("prev").onclick=()=>{if(closed)return;
+ if(isWide()){const l=leftOf();if(l===0)closed=true;else pg=l-2===0?1:l-2}else{if(pg<=0)closed=true;else pg--}renderBook()};
+$("next").onclick=()=>{if(closed){closed=false;pg=isWide()?1:0}
+ else if(isWide()){const l=leftOf();if(l+2<=nPages)pg=l+2}else if(pg<nPages)pg++;renderBook()};
+const goLast=()=>{closed=false;pg=used;renderBook()};
+$("last").onclick=goLast;
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(renderBook,150)});
+document.fonts&&document.fonts.addEventListener("loadingdone",()=>renderBook());
+$("vzb").onclick=()=>{$("vzbox").hidden=false;$("vzb").hidden=true;$("vz").focus()};
+$("vzc").onclick=()=>{$("vz").value="";$("vzbox").hidden=true;$("vzb").hidden=false};
+const eid=()=>"e"+Date.now()+Math.random().toString(36).slice(2,6);
+$("add").onclick=()=>safe(async()=>{
+ const text=$("tx").value.replace(/\s+$/,""),s=latest();if(!text.trim()||!s||full())return;
+ await db.doc("entries/"+eid()).set({j:curJ,shift:s.id,uid,type:"note",time:getT(),text,vz:$("vz").value.trim(),ink,ts:Date.now(),...(pickAt!=null?{at:pickAt}:{})});
+ pickAt=null;$("tx").value="";$("vzc").click();setNow();goLast();});
+$("acc").onclick=()=>safe(async()=>{const l=latest();if(!l||!l.closed||l.accBy)return;
+ await db.doc("shifts/"+l.id).update({accBy:uid,accTime:nowS(),accInk:ink});goLast();});
+let cf;$("close").onclick=()=>safe(async()=>{const l=latest();if(!l||l.closed)return;
+ if(!cf){$("close").textContent="Подтвердить завершение?";cf=setTimeout(()=>{cf=0;$("close").textContent="Завершить смену"},4000);return}
+ clearTimeout(cf);cf=0;$("close").textContent="Завершить смену";
+ await db.doc("shifts/"+l.id).update({closed:true,handBy:uid,handName:$("rsp").value||"",handInk:ink});goLast();});
+// owner: edit entry
+let edId=null,df;
+function openEd(id){const x=entries.find(q=>q.id===id);if(!x||!canEdit(x.uid))return;edId=id;
+ const [h,m,t]=(x.time||"00:00:00").split(":");$("eh").value=h;$("em").value=m;$("es").value=t;
+ $("etx").value=x.text||"";$("evz").value=x.vz||"";$("etxrow").hidden=x.type==="sign";
+ const pl=placed[id]||{p:1,r:1};$("epp").value=pl.p;$("epr").value=pl.r;
+ $("edel").textContent="Удалить запись";$("ed").showModal()}
+$("book").onclick=e=>{
+ if(e.target.closest(".tp")){if(isOwner)openJ(curJ);return}
+ const r=e.target.closest(".row.c");
+ if(r){
+  if(r.dataset.h)return e.target.closest(".sg")?openSig(r.dataset.s,r.dataset.h):openHand(r.dataset.s,r.dataset.h);
+  if(r.dataset.e){if(e.target.closest(".sg"))openSig(r.dataset.e);else openEd(r.dataset.e)}
+  else if(r.dataset.s)openShift(r.dataset.s);
+  return}
+ const pb=e.target.closest(".pb[data-p]");
+ if(pb&&!$("composer").hidden){const y=Math.floor((e.clientY-pb.getBoundingClientRect().top)/(28*curK));
+  pickAt=(+pb.dataset.p-1)*36+Math.max(0,Math.min(35,y));renderBook();$("composer").scrollIntoView({block:"nearest"})}};
+$("pickc").onclick=()=>{pickAt=null;renderBook()};
+$("ecl").onclick=()=>$("ed").close();
+const saveEd=()=>{const p=Math.max(1,Math.min(100,+$("epp").value||1)),r=Math.max(1,Math.min(36,+$("epr").value||1));
+ return db.doc("entries/"+edId).update({time:`${$("eh").value}:${$("em").value}:${$("es").value}`,text:$("etx").value.replace(/\s+$/,""),vz:$("evz").value.trim(),at:(p-1)*36+r-1})};
+$("esv").onclick=()=>safe(async()=>{await saveEd();$("ed").close()});
+$("esg").onclick=()=>safe(async()=>{await saveEd();$("ed").close();openSig(edId)});
+// signature editor
+let sdId=null,sdv={},pvk=1,drag=null;
+const sgStyle=i=>{i.style.height=sdv.sgS+"px";i.style.left=(10+sdv.sgX)+"px";i.style.top=`calc(var(--rh)/2 - ${sdv.sgS/2}px + ${sdv.sgY}px)`};
+let sdT=null,sdHtml=null,sdBy=null;
+function drawPv(){const u=prof[(isOwner&&$("sdu").value)||sdBy];
+ $("pvi").innerHTML=`<div class="pb" style="height:auto;padding:84px 0">${sdHtml(u)}</div>`;
+ pvk=Math.min(1,$("pvw").clientWidth/750);$("pvi").style.transform=`scale(${pvk})`;$("pvw").style.height=$("pvi").offsetHeight*pvk+"px"}
+function openSig(id,w){let g,nos;
+ if(w){const sh=shifts.find(q=>q.id===id);if(!sh)return;sdBy=w==="hand"?sh.handBy:sh.accBy;if(!sdBy||!canMine(sdBy))return;g=shg(sh,w);nos=!!g.nosg;
+  const lb=sh[w+"Label"]||(w==="hand"?"Смену сдал:":"Смену принял:");
+  sdHtml=u=>row(stOf(sdBy,w==="hand"?sh.handInk:sh.accInk),"",`${esc(lb)} ${esc(sh[w+"Name"]||prof[sdBy]?.name)}`+sgOf(u,{...sdv}),"","ctr big")}
+ else{const x=entries.find(q=>q.id===id);if(!x)return;sdBy=x.sgBy||x.uid;g=x;nos=!!x.nosg;
+  sdHtml=u=>row(stOf(x.uid,x.ink),esc(x.time),(x.type==="sign"?"":rich(x.text))+sgOf(u,{...sdv}),rich(x.vz||""))}
+ sdT={id,w};sdv={sgS:g.sgS||60,sgX:g.sgX||0,sgY:g.sgY||0};
+ $("sdur").hidden=!isOwner;if(isOwner){$("sdu").innerHTML=Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("sdu").value=sdBy}
+ $("sds").value=sdv.sgS;$("sdn").checked=nos;$("sd").showModal();drawPv()}
+$("sds").oninput=()=>{sdv.sgS=+$("sds").value;const i=$("pvi").querySelector("img");i&&sgStyle(i)};
+$("sdr").onclick=()=>{sdv={sgS:60,sgX:0,sgY:0};$("sds").value=60;const i=$("pvi").querySelector("img");i&&sgStyle(i)};
+$("pvw").style.touchAction="none";
+$("pvw").onpointerdown=e=>{const sp=$("pvi").querySelector(".sg"),i=sp&&sp.querySelector("img");if(!i)return;e.preventDefault();$("pvw").setPointerCapture(e.pointerId);
+ if(!e.target.closest("img")){const r=sp.getBoundingClientRect();
+  sdv.sgX=Math.round((e.clientX-r.left)/pvk-i.offsetWidth/2-10);sdv.sgY=Math.round((e.clientY-r.top)/pvk-14);sgStyle(i)}
+ drag={x:e.clientX,y:e.clientY,sx:sdv.sgX,sy:sdv.sgY,i}};
+$("pvw").onpointermove=e=>{if(!drag)return;sdv.sgX=Math.round(drag.sx+(e.clientX-drag.x)/pvk);sdv.sgY=Math.round(drag.sy+(e.clientY-drag.y)/pvk);sgStyle(drag.i)};
+$("pvw").onpointerup=$("pvw").onpointercancel=()=>drag=null;
+$("sdu").onchange=drawPv;
+$("sdc").onclick=()=>$("sd").close();
+$("sdv").onclick=()=>safe(async()=>{const w=sdT.w,u=isOwner?$("sdu").value:null;
+ if(w){const o={[w+"SgS"]:sdv.sgS,[w+"SgX"]:sdv.sgX,[w+"SgY"]:sdv.sgY,[w+"NoSg"]:$("sdn").checked};if(u)o[w==="hand"?"handBy":"accBy"]=u;await db.doc("shifts/"+sdT.id).update(o)}
+ else await db.doc("entries/"+sdT.id).update({...sdv,nosg:$("sdn").checked,...(u?{sgBy:u}:{})});
+ $("sd").close()});
+$("edel").onclick=()=>safe(async()=>{
+ if(!df){$("edel").textContent="Точно удалить?";df=setTimeout(()=>{df=0;$("edel").textContent="Удалить запись"},4000);return}
+ clearTimeout(df);df=0;await db.doc("entries/"+edId).delete();$("ed").close()});
+// new shift
+const so=(a,b,f)=>Array.from({length:b-a+1},(_,i)=>`<option>${f(a+i)}</option>`).join("");
+$("d").innerHTML='<option value="">--</option>'+so(1,31,pad);$("m").innerHTML='<option value="">--</option>'+so(1,12,pad);$("y").innerHTML='<option value="">__</option>'+so(0,99,pad);
+$("fh").innerHTML=$("uh").innerHTML=so(0,23,x=>x);$("fm").innerHTML=$("um").innerHTML=so(0,59,pad);
+function crewRow(pos="",name=""){
+ const r=document.createElement("div");r.className="g";
+ r.innerHTML=`<input list="plist" placeholder="Должность" style="width:150px"><input list="ulist" placeholder="Фамилия И.О. (выберите из списка)" style="flex:1;min-width:140px">`;
+ const i=r.querySelectorAll("input");i[0].value=pos;i[1].value=name;
+ const x=document.createElement("button");x.className="ghost";x.textContent="✕";x.onclick=()=>r.remove();r.append(x);
+ $("crew").append(r);
+}
+function fillShift(s){$("d").value=s?s.d:pad(new Date().getDate());$("m").value=s?s.m:pad(new Date().getMonth()+1);$("y").value=s?s.y:"";
+ $("num").value=s?s.num:"";$("fh").value=s&&s.fh!=null?+s.fh:8;$("fm").value=s&&s.fm?s.fm:"00";$("uh").value=s&&s.uh!=null?+s.uh:20;$("um").value=s&&s.um?s.um:"00";
+ $("crew").innerHTML="";(s?s.crew:[]).forEach(c=>crewRow(c.pos,c.name))}
+$("newb").onclick=()=>{const l=latest();if(l&&!(l.accBy||isOwner))return toast("Сначала предыдущую смену должна принять следующая смена.");
+ shEd=null;$("ndt").textContent="Новая смена";$("mk").textContent="Создать";fillShift(null);$("nd").showModal()};
+function openShift(id){const s=shifts.find(x=>x.id===id);if(!s||!canEdit(s.by))return;shEd=id;
+ $("ndt").textContent="Редактирование заголовка смены";$("mk").textContent="Сохранить";fillShift(s);$("nd").showModal()}
+$("plus").onclick=()=>crewRow();
+$("nc").onclick=()=>$("nd").close();
+$("mk").onclick=()=>safe(async()=>{
+ if(!shEd&&full())return;
+ const crew=[...$("crew").children].map(r=>{const i=r.querySelectorAll("input");return{pos:i[0].value.trim(),name:i[1].value.trim(),uid:uidOf(i[1].value)}}).filter(c=>c.name);
+ if(!crew.length)return toast("Добавьте хотя бы одного человека в состав смены (кнопка ＋)");
+ if(!$("d").value||!$("m").value||!$("y").value||!$("num").value)return toast("Укажите число и номер смены");
+ const f={d:$("d").value,m:$("m").value,y:$("y").value,num:$("num").value,fh:$("fh").value,fm:$("fm").value,uh:$("uh").value,um:$("um").value,crew};
+ if(shEd)await db.doc("shifts/"+shEd).update(f);
+ else{await db.doc("shifts/s"+Date.now()).set({...f,j:curJ,ink,by:uid,createdAt:Date.now(),...(pickAt!=null?{at:pickAt}:{})});pickAt=null;}
+ $("nd").close();if(!shEd)goLast();});
+// owner panel
+function renderUsers(){
+ if(!isOwner||!$("od").open)return;
+ const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i));
+ $("users").innerHTML=ids.length?`<table>${ids.map(i=>`<tr><td><img src="${prof[i].sig||""}" height="28" alt=""></td><td>${esc(prof[i].name)}</td>
+ <td><select data-f="1">${FONTS.map((f,k)=>`<option value="${k}" style="font-family:'${f}'"${fo(i)===k?" selected":""}>Почерк ${k+1}</option>`).join("")}</select></td>
+ ${i===uid?`<td colspan="2" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(p=>`<option${roles[i]?.position===p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
+ <td><label><input type="checkbox"${roles[i]?.approved?" checked":""}> разрешено</label></td>`}</tr>`).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
+ [...$("users").querySelectorAll("tr")].forEach((tr,k)=>tr.dataset.u=ids[k]);
+}
+$("users").onchange=e=>safe(async()=>{const tr=e.target.closest("tr");if(!tr)return;
+ if(e.target.dataset.f)return await db.doc("profiles/"+tr.dataset.u).update({font:+e.target.value});
+ await db.doc("roles/"+tr.dataset.u).set({position:tr.querySelector("[data-p]").value,approved:tr.querySelector("input").checked});});
+$("ps").onclick=()=>safe(async()=>{await db.doc("config/positions").set({list:$("pl").value.split("\n").map(s=>s.trim()).filter(Boolean)});toast("Должности сохранены")});
+let jEd=null;
+$("jcs").innerHTML=COLORS.map(c=>`<span class="ink" data-c="${c}" style="background:${c}"></span>`).join(" ");
+$("jcs").onclick=e=>{if(e.target.dataset.c)$("jcol").value=e.target.dataset.c};
+function openJ(id){if(!isOwner)return;jEd=id;const j=id?jrs.find(x=>x.id===id):null,ds=depts.length?depts:DEPT;
+ $("jdt").textContent=j?"Настройки журнала":"Новый журнал";
+ $("jdp").innerHTML=ds.map(d=>`<option>${esc(d)}</option>`).join("");
+ $("jn").value=j?j.name||"":"ОПЕРАТИВНЫЙ ЖУРНАЛ";$("jdp").value=j?.dept||(dept!=="*"?dept:ds[0]);$("jpg").value=j?.pages||100;
+ $("tinv").value=j?.inv||"";$("tunit").value=j?.unit||"";$("tst").value=j?.start||"";$("ten").value=j?.end||"";$("jcol").value=j?.color||COLORS[0];
+ $("jdel").hidden=!j;$("jsb").innerHTML=`<option value="">— без подписи —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("jsb").value=j?.signBy||"";$("jd").showModal()}
+const jData=()=>({name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value});
+$("jsv").onclick=()=>safe(async()=>{if(jEd)await db.doc("journals/"+jEd).update(jData());
+ else await db.doc("journals/"+(jrs.length?"j"+Date.now():"main")).set({...jData(),createdAt:Date.now(),by:uid});$("jd").close()});
+let jdf;$("jdel").onclick=()=>safe(async()=>{
+ if(!jdf){$("jdel").textContent="Точно удалить журнал?";jdf=setTimeout(()=>{jdf=0;$("jdel").textContent="Удалить журнал"},4000);return}
+ clearTimeout(jdf);jdf=0;$("jdel").textContent="Удалить журнал";await db.doc("journals/"+jEd).delete();if(curJ===jEd)curJ=null;$("jd").close()});
+$("jcl").onclick=()=>$("jd").close();$("jset").onclick=()=>openJ(curJ);$("jnew").onclick=()=>openJ(null);
+// hand-over rows
+let hdS=null,hdW=null;
+function openHand(sid,w){const s=shifts.find(x=>x.id===sid);if(!s)return;const by=w==="hand"?s.handBy:s.accBy;
+ if(!(isOwner||canMine(by)))return;hdS=sid;hdW=w;$("hdt").textContent=w==="hand"?"Сдача смены":"Приём смены";
+ $("hl").value=s[w+"Label"]||(w==="hand"?"Смену сдал:":"Смену принял:");$("hn").value=s[w+"Name"]||prof[by]?.name||"";
+ $("hur").hidden=!isOwner;if(isOwner){$("hu").innerHTML=`<option value="">— выберите —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("hu").value=by||""}
+ $("hd").showModal()}
+$("hsv").onclick=()=>safe(async()=>{const s=shifts.find(x=>x.id===hdS),w=hdW,u={[w+"Label"]:$("hl").value.trim(),[w+"Name"]:$("hn").value.trim()};
+ if(isOwner&&$("hu").value){u[w==="hand"?"handBy":"accBy"]=$("hu").value;if(w==="acc"&&!s.accBy){u.accTime=nowS();u.accInk=ink}}
+ await db.doc("shifts/"+hdS).update(u);$("hd").close()});
+$("hcl").onclick=()=>$("hd").close();
+// index formatting
+document.addEventListener("click",e=>{const b=e.target.closest(".fmt");if(!b)return;const ta=$(b.dataset.t),a=ta.selectionStart,z=ta.selectionEnd,k=b.dataset.k+"{";
+ ta.setRangeText(k+ta.value.slice(a,z)+"}",a,z,"end");if(a===z)ta.setSelectionRange(a+2,a+2);ta.focus()});
+// delete tools
+$("xb").onclick=()=>{const l=[...shifts].sort((a,b)=>a.createdAt-b.createdAt);
+ $("xs").innerHTML=l.map(x=>`<option value="${x.id}">${esc(fmt(x))} · смена №${esc(x.num)}</option>`).join("")||`<option value="">— смен нет —</option>`;$("xd").showModal()};
+const delMany=async ps=>{for(let i=0;i<ps.length;i+=20)await Promise.all(ps.slice(i,i+20).map(p=>db.doc(p).delete()))};
+function twoStep(id,label,fn){const b=$(id);let t=0;b.onclick=()=>safe(async()=>{
+ if(!t){b.textContent="Точно? Нажмите ещё раз";t=setTimeout(()=>{t=0;b.textContent=label},4000);return}
+ clearTimeout(t);t=0;b.textContent=label;await fn()})}
+twoStep("xsd","Удалить смену с записями",async()=>{const id=$("xs").value;if(!id)return;
+ await delMany([...allE.filter(e=>e.shift===id).map(e=>"entries/"+e.id),"shifts/"+id]);toast("Смена удалена");$("xd").close()});
+twoStep("xall","Удалить ВСЕ записи журнала",async()=>{
+ await delMany([...entries.map(e=>"entries/"+e.id),...shifts.map(x=>"shifts/"+x.id)]);toast("Все записи журнала удалены");$("xd").close()});
+$("xcl").onclick=()=>$("xd").close();
+// departments / library
+$("dsv").onclick=()=>safe(async()=>{await db.doc("config/depts").set({list:$("dl").value.split("\n").map(x=>x.trim()).filter(Boolean)});toast("Подразделения сохранены")});
+function renderLib(){
+ const ds=depts.length?depts:DEPT;
+ $("depts").innerHTML=["*",...ds].map(d=>`<button class="chip ${d===dept?"on":"ghost"}" data-d="${esc(d)}">${d==="*"?"Все":esc(d)}</button>`).join("");
+ const l=jrs.filter(j=>dept==="*"||j.dept===dept).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+ $("shelf").innerHTML=l.length?l.map(j=>`<div class="jc" data-j="${j.id}" style="${cbg(j.color)}">${isOwner?'<button class="gear">⚙</button>':""}<b>${esc(j.name||"Журнал")}</b><div class="lb">Инв. № ${esc(j.inv||"—")}<br>Страниц: ${+j.pages||100}</div></div>`).join(""):`<p class="hint">В этом подразделении пока нет журналов.</p>`;
+}
+$("depts").onclick=e=>{const b=e.target.closest("[data-d]");if(b){dept=b.dataset.d;renderLib()}};
+$("shelf").onclick=e=>{const c=e.target.closest(".jc");if(!c)return;if(e.target.closest(".gear"))return openJ(c.dataset.j);curJ=c.dataset.j;closed=true;pg=1;pickAt=null;all()};
+$("back").onclick=()=>{curJ=null;all()};
+$("oc").onclick=()=>$("od").close();
+const all=()=>{
+ if(curJ&&!jrs.find(x=>x.id===curJ))curJ=null;
+ J=jrs.find(x=>x.id===curJ)||{};title=J;
+ shifts=allS.filter(x=>(x.j||"main")===curJ);entries=allE.filter(x=>(x.j||"main")===curJ);
+ renderBar();curJ?renderBook():renderLib();renderUsers()};
+// ===================== Supabase: шар зв'язку з базою =====================
+const SB_URL="https://oepqtzfhajkimgfspxeb.supabase.co",SB_KEY="sb_publishable_Lu5wT5MLx6Izns667XKtSg_2W44ErxY";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const RAW={},SUBS={},ORD={profiles:"created_at",departments:"sort",positions:"sort",journals:"created_at",shifts:"created_at",entries:"created_at"};
+const isU=s=>/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(s||""),tsn=x=>x?Date.parse(x):0;
+const dName=id=>((RAW.departments||[]).find(d=>d.id===id)||{}).name,dId=n=>((RAW.departments||[]).find(d=>d.name===n)||{}).id||null;
+const g_=o=>o||{};
+const MAP={
+ profiles:r=>({name:r.full_name,sig:r.signature,createdAt:tsn(r.created_at),font:r.font}),
+ roles:r=>({position:r.position||"",approved:!!r.approved||r.role==="owner"}),
+ journals:r=>({name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",createdAt:tsn(r.created_at),by:r.created_by}),
+ shifts:r=>({j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
+  handBy:r.hand_by,handName:r.hand_name,handLabel:r.hand_label,handInk:r.hand_ink,handSgS:g_(r.hand_sg).s,handSgX:g_(r.hand_sg).x,handSgY:g_(r.hand_sg).y,handNoSg:g_(r.hand_sg).nosg,
+  accBy:r.acc_by,accName:r.acc_name,accLabel:r.acc_label,accInk:r.acc_ink,accTime:r.acc_at,accSgS:g_(r.acc_sg).s,accSgX:g_(r.acc_sg).x,accSgY:g_(r.acc_sg).y,accNoSg:g_(r.acc_sg).nosg}),
+ entries:r=>({j:r.journal_id,shift:r.shift_id,uid:r.author,type:"note",time:r.time,text:r.body,vz:r.visa||"",ink:r.ink,ts:tsn(r.created_at),at:r.at_row,sgBy:r.sig_by||undefined,sgS:g_(r.sig).s,sgX:g_(r.sig).x,sgY:g_(r.sig).y,nosg:g_(r.sig).nosg})
+};
+const SRC={profiles:"profiles",roles:"profiles",journals:"journals",shifts:"shifts",entries:"entries"};
+const AFFECT={profiles:["profiles","roles"],departments:["config/depts","journals"],positions:["config/positions"],journals:["journals"],shifts:["shifts"],entries:["entries"]};
+function emit(k,only){(only?[only]:SUBS[k]||[]).forEach(cb=>{try{
+ if(k==="config/depts")cb({exists:true,data:()=>({list:(RAW.departments||[]).map(d=>d.name)})});
+ else if(k==="config/positions")cb({exists:true,data:()=>({list:(RAW.positions||[]).map(p=>p.name)})});
+ else cb({docs:(RAW[SRC[k]]||[]).map(r=>({id:r.id,data:()=>MAP[k](r)}))})}catch(e){console.error(e)}})}
+async function fetchAll(t){let out=[],i=0;for(;;){let q=sb.from(t).select("*").order(ORD[t]).range(i,i+999);if(t==="entries")q=q.is("deleted_at",null);
+ const{data,error}=await q;if(error)throw error;out=out.concat(data);if(data.length<1000)break;i+=1000}return out}
+const loadAll=()=>Promise.all(Object.keys(ORD).map(t=>fetchAll(t).then(r=>RAW[t]=r)));
+async function reload(t){RAW[t]=await fetchAll(t);AFFECT[t].forEach(k=>emit(k))}
+const fail=e=>{if(e)throw new Error(e.message||e.code)};
+const ROW={
+ journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended"};
+  for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;return r},
+ shifts:(o,cur)=>{const r={},m={d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
+  for(const k in o)if(m[k])r[m[k]]=o[k];if("fh"in o)r.fh=+o.fh;if("uh"in o)r.uh=+o.uh;if("accTime"in o)r.acc_at=new Date().toISOString();
+  ["hand","acc"].forEach(p=>{const ks={s:p+"SgS",x:p+"SgX",y:p+"SgY",nosg:p+"NoSg"};
+   if(Object.values(ks).some(k=>k in o)){const g={s:cur[ks.s],x:cur[ks.x],y:cur[ks.y],nosg:cur[ks.nosg]};for(const q in ks)if(ks[q]in o)g[q]=o[ks[q]];r[p+"_sg"]=g}});return r},
+ entries:(o,cur)=>{const r={},m={j:"journal_id",shift:"shift_id",uid:"author",time:"time",text:"body",vz:"visa",ink:"ink",at:"at_row",sgBy:"sig_by"};
+  for(const k in o)if(m[k])r[m[k]]=o[k];
+  if(["sgS","sgX","sgY","nosg"].some(k=>k in o)){const g={s:cur.sgS,x:cur.sgX,y:cur.sgY,nosg:cur.nosg};
+   if("sgS"in o)g.s=o.sgS;if("sgX"in o)g.x=o.sgX;if("sgY"in o)g.y=o.sgY;if("nosg"in o)g.nosg=o.nosg;r.sig=g}return r}
+};
+async function cfgSet(id,list){
+ if(id==="depts"){const cur=RAW.departments||[];
+  for(const d of cur)if(!list.includes(d.name))fail((await sb.from("departments").delete().eq("id",d.id)).error);
+  for(let i=0;i<list.length;i++){const ex=cur.find(d=>d.name===list[i]);
+   fail((ex?await sb.from("departments").update({sort:i+1}).eq("id",ex.id):await sb.from("departments").insert({name:list[i],sort:i+1})).error)}
+  return reload("departments")}
+ const cur=RAW.positions||[];
+ for(const p of cur)if(!list.includes(p.name))fail((await sb.from("positions").delete().eq("name",p.name)).error);
+ for(let i=0;i<list.length;i++)fail((await sb.from("positions").upsert({name:list[i],sort:i+1})).error);
+ return reload("positions")}
+async function put(c,id,o,isSet){
+ if(c==="config")return cfgSet(id,o.list||[]);
+ let t=c,row;
+ if(c==="profiles"){row={};if("name"in o)row.full_name=o.name;if("sig"in o)row.signature=o.sig;if("font"in o&&isOwner)row.font=o.font}
+ else if(c==="roles"){t=c="profiles";row={position:o.position||null,approved:!!o.approved}}
+ else{const cur=(c==="journals"?jrs:c==="shifts"?allS:allE).find(x=>x.id===id)||{};row=ROW[c](o,cur)}
+ if(!Object.keys(row).length)return;
+ let q;
+ if(isSet&&c!=="profiles"&&!isU(id)){if(c!=="entries")row.created_by=uid;q=sb.from(t).insert(row)}
+ else q=sb.from(t).update(row).eq("id",id);
+ fail((await q).error);await reload(t)}
+async function del(c,id){
+ const q=c==="entries"&&!isOwner?sb.from("entries").update({deleted_at:new Date().toISOString()}).eq("id",id):sb.from(c).delete().eq("id",id);
+ fail((await q).error);await reload(c)}
+db={
+ doc:p=>{const[c,id]=p.split("/");return{set:o=>put(c,id,o,true),update:o=>put(c,id,o,false),delete:()=>del(c,id),
+  onSnapshot:cb=>{const k=c+"/"+id;(SUBS[k]=SUBS[k]||[]).push(cb);emit(k,cb)}}},
+ collection:c=>({onSnapshot:cb=>{(SUBS[c]=SUBS[c]||[]).push(cb);emit(c,cb)}})
+};
+const uidOf=n=>{n=nm(n);return n?(Object.keys(prof).find(i=>nm(prof[i].name)===n)||null):null};
+function live(){const tm={};
+ sb.channel("jr").on("postgres_changes",{event:"*",schema:"public"},p=>{const t=p.table;if(!ORD[t])return;clearTimeout(tm[t]);tm[t]=setTimeout(()=>reload(t).catch(()=>{}),250)}).subscribe();
+ setInterval(()=>Object.keys(ORD).forEach(t=>reload(t).catch(()=>{})),120000)}
+// ---- вхід і реєстрація ----
+async function showAuth(){
+ $("auth").hidden=false;
+ const{data}=await sb.from("departments").select("*").order("sort");
+ $("ad").innerHTML='<option value="">— цех —</option>'+(data||[]).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join("");
+ const cr=()=>({email:$("ae").value.trim(),password:$("ap").value});
+ $("ain").onclick=()=>safe(async()=>{fail((await sb.auth.signInWithPassword(cr())).error)});
+ $("aup").onclick=()=>safe(async()=>{const n=$("an").value.trim();if(!n)return toast("Вкажіть прізвище та ініціали");
+  const r=await sb.auth.signUp({...cr(),options:{data:{full_name:n,dept_id:$("ad").value}}});fail(r.error);
+  if(!r.data.session)toast("Підтвердіть пошту за листом, потім натисніть «Увійти».")});
+}
+(async()=>{
+ sb.auth.onAuthStateChange(e=>{if((e==="SIGNED_IN"&&!uid)||e==="SIGNED_OUT")location.reload()});
+ const{data}=await sb.auth.getSession();
+ if(!data.session)return showAuth();
+ uid=data.session.user.id;
+ try{await loadAll()}catch(e){return toast("Помилка зв'язку з базою: "+(e.message||e))}
+ const me=RAW.profiles.find(r=>r.id===uid);isOwner=!!me&&me.role==="owner";
+ $("rn").value=me?me.full_name:"";
+ const sub=(c,fn)=>db.collection(c).onSnapshot(s=>{fn(s.docs);all()});
+ sub("profiles",d=>{prof={};d.forEach(x=>prof[x.id]=x.data())});
+ sub("roles",d=>{roles={};d.forEach(x=>roles[x.id]=x.data())});
+ sub("journals",d=>{jrs=d.map(x=>({id:x.id,...x.data()}))});
+ sub("shifts",d=>{allS=d.map(x=>({id:x.id,...x.data()}))});
+ sub("entries",d=>{allE=d.map(x=>({id:x.id,...x.data()}))});
+ db.doc("config/depts").onSnapshot(s=>{depts=s.data().list;all()});
+ db.doc("config/positions").onSnapshot(s=>{positions=s.data().list;all()});
+ live();all();
+})();
+
+</script></main></body></html>
