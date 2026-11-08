@@ -573,9 +573,11 @@ async function showAuth(){
   if(!r.data.session)toast("Підтвердіть пошту за листом, потім натисніть «Увійти».")});
 }
 (async()=>{
- sb.auth.onAuthStateChange(e=>{if((e==="SIGNED_IN"&&!uid)||e==="SIGNED_OUT")location.reload()});
+ let had=null;
+ sb.auth.onAuthStateChange(e=>{if(had===null)return;if((e==="SIGNED_IN"&&!had)||(e==="SIGNED_OUT"&&had))location.reload()});
  const{data}=await sb.auth.getSession();
- if(!data.session)return showAuth();
+ had=!!data.session;
+ if(!had)return showAuth();
  uid=data.session.user.id;
  try{await loadAll()}catch(e){return toast("Помилка зв'язку з базою: "+(e.message||e))}
  const me=RAW.profiles.find(r=>r.id===uid);isOwner=!!me&&me.role==="owner";
