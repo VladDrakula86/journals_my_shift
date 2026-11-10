@@ -19,6 +19,7 @@ button{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:7px 1
 button.ghost{background:transparent;color:var(--fg);border:1px solid var(--acc)}
 select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;background:#fffdf6;color:#222}
 #lang button{padding:3px 8px;font-size:12px}
+.chip2{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--acc);border-radius:14px}
 .card{background:var(--card);border-radius:8px;padding:12px;margin:10px 0}
 .hint{opacity:.75}
 canvas{background:#fffdf6;border:1px dashed #8a7d66;border-radius:6px;touch-action:none;width:100%;max-width:560px;height:auto;display:block}
@@ -108,6 +109,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div id="jv" hidden>
  <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b></div>
  <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
+ <div id="cur" class="card" style="margin:6px 0"></div>
  <div id="wrap"><div class="book" id="book"></div><div id="meas"></div></div>
  <div class="nav"><button id="prev">◀</button><span id="pinfo" class="hint"></span><button id="next">▶</button></div>
  <p id="ownh" class="hint" hidden>Нажмите на свою запись или заголовок смены, чтобы изменить или удалить. Чтобы писать с определённой строки — нажмите на пустую клетку листа.</p>
@@ -132,15 +134,27 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 <dialog id="nd"><b id="ndt">Новая смена</b>
  <div class="g">Число: <select id="d"></select>.<select id="m"></select>.19<select id="y"></select></div>
  <div class="g">Смена №<input class="n" id="num"> с <select id="fh"></select>:<select id="fm"></select> до <select id="uh"></select>:<select id="um"></select></div>
+ <div class="g">Бригада смены: <select id="nteam"></select></div>
  <b>Состав смены</b><div id="crew"></div>
  <div class="g"><button class="ghost" id="plus">＋ добавить (должность и Ф.И.О.)</button></div>
  <div class="g"><button id="mk">Создать</button><button class="ghost" id="nc">Отмена</button></div>
 </dialog>
-<dialog id="od"><b>Управление</b>
+<dialog id="pd"><b>Мой профиль</b>
+ <div class="g"><span id="pav"></span><input type="file" id="pfile" accept="image/*" style="max-width:220px"><button class="ghost" id="pavc" type="button">Убрать аватар</button></div>
+ <div class="g"><input id="pn" placeholder="Фамилия И.О." style="flex:1;min-width:200px"></div>
+ <div class="g">Стаж (лет): <input class="n" id="pex" type="number" min="0" max="80"> Discord ID: <input id="pdc" maxlength="64" style="flex:1;min-width:140px"></div>
+ <textarea id="pab" rows="3" maxlength="500" style="width:100%" placeholder="Коротко о себе"></textarea>
+ <p class="hint" id="pro"></p>
+ <div class="g"><button id="psv">Сохранить</button><button class="ghost" id="pcl">Закрыть</button></div>
+</dialog>
+<dialog id="od" style="max-width:900px;width:96%"><b>Управление</b>
  <p class="hint">Подтверждение пользователей и их должности.</p><div id="users"></div>
  <p><b>Подразделения (цеха)</b> (каждое с новой строки)</p>
  <textarea id="dl" rows="4" style="width:100%"></textarea>
  <div class="g"><button id="dsv">Сохранить подразделения</button></div>
+ <p><b>Смены (бригады)</b> (например: 1 (А); каждая с новой строки)</p>
+ <textarea id="tl" rows="4" style="width:100%"></textarea>
+ <div class="g"><button id="tsv">Сохранить смены</button></div>
  <p><b>Список должностей</b> (подсказки для состава смены; каждая с новой строки)</p>
  <textarea id="pl" rows="5" style="width:100%"></textarea>
  <div class="g"><button id="ps">Сохранить должности</button><button class="ghost" id="oc">Закрыть</button></div>
@@ -221,15 +235,25 @@ function renderBar(){
  $("reg").hidden=!!p;$("app").hidden=!p;$("lib").hidden=!!curJ;$("jv").hidden=!curJ;
  $("plist").innerHTML=P().map(x=>`<option value="${esc(x)}">`).join("");$("ulist").innerHTML=Object.keys(prof).map(i=>`<option value="${esc(prof[i].name)}">`).join("");
  if(!p){b.innerHTML="";return}
- b.innerHTML=`<span class="hint">${esc(p.name)}${roles[uid]?.position?" · "+esc(roles[uid].position):""}</span> `+(isOwner?`<button class="ghost" id="ob">⚙ Управление</button>`:"")+` <button class="ghost" id="lo">Выйти</button>`;$("lo").onclick=()=>sb.auth.signOut();
- if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("dl").value=(depts.length?depts:DEPT).join("\n");renderUsers();$("od").showModal()};
+ b.innerHTML=`${av(p,28)} <span class="hint">${esc(p.name)}${roles[uid]?.position?" · "+esc(roles[uid].position):""}${p.team?" · "+esc(p.team):""}</span> <button class="ghost" id="pb2">👤 Профиль</button> `+(isOwner?`<button class="ghost" id="ob">⚙ Управление</button>`:"")+` <button class="ghost" id="lo">Выйти</button>`;$("lo").onclick=()=>sb.auth.signOut();$("pb2").onclick=openProfile;
+ if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("tl").value=teams.join("\n");$("dl").value=(depts.length?depts:DEPT).join("\n");$("od").showModal();renderUsers()};
  $("ownh").hidden=!approved();$("jset").hidden=!isOwner;$("xb").hidden=!isOwner;$("jnew").hidden=!isOwner;
  if(!approved()){$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";$("msg").dataset.w="1"}
  else if($("msg").dataset.w){$("msg").textContent="";delete $("msg").dataset.w}
- $("newb").hidden=!approved();
+ $("newb").hidden=!canNew();
 }
 const nm=x=>String(x||"").toLowerCase().replace(/[\s.,]/g,"");
-function onShift(){const l=latest();return !!(l&&!l.closed&&l.crew.some(c=>c.uid&&c.uid===uid))}
+const av=(p,z=28)=>p&&p.avatar?`<img src="${p.avatar}" width="${z}" height="${z}" style="border-radius:50%;object-fit:cover;vertical-align:middle" alt="">`:`<span style="display:inline-block;width:${z}px;height:${z}px;border-radius:50%;background:#8a7d66;color:#fff;text-align:center;line-height:${z}px;font-size:${Math.round(z*.5)}px;vertical-align:middle">${esc(((p&&p.name)||"?")[0]||"?")}</span>`;
+function onShift(){const l=latest(),m=prof[uid]||{};return !!(l&&!l.closed&&l.team&&m.team===l.team&&m.deptId&&m.deptId===J.deptId)}
+const sameDept=()=>isOwner||!!((prof[uid]||{}).deptId&&prof[uid].deptId===J.deptId);
+const canNew=()=>isOwner||(approved()&&sameDept()&&!!(prof[uid]||{}).team);
+function banner(l){
+ if(!l)return `<span>Смена не открыта</span>`;
+ const st=!l.closed?"открыта":l.accBy?"принята":"ожидает приёма";
+ let h=`<b>Текущая смена:</b> <b style="color:var(--acc)">${esc(l.team||"—")}</b> · <span>Смена №${esc(l.num)} от ${esc(fmt(l))}</span> · <span>${st}</span>`;
+ if(!l.closed){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&prof[i].team&&prof[i].team===l.team&&prof[i].deptId&&prof[i].deptId===J.deptId);
+  h+=`<div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>никого</span>"}</div>`}
+ return h}
 const canWrite=()=>isOwner||(approved()&&onShift());
 const canEdit=by=>isOwner||(by===uid&&canWrite());
 const canMine=by=>isOwner||(!!by&&by===uid&&approved());
@@ -312,8 +336,11 @@ function renderBook(){
  $("pinfo").textContent=info;
  const l=latest(),ap=approved(),cw=canWrite();
  $("composer").hidden=!(l&&cw&&!l.closed);
+ const m0=prof[uid]||{};
  $("vo").hidden=!(ap&&!cw&&!(l&&l.closed&&!l.accBy));
- $("accp").hidden=!(l&&ap&&l.closed&&!l.accBy);
+ $("vo").textContent=!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
+ $("accp").hidden=!(l&&ap&&sameDept()&&l.closed&&!l.accBy);
+ $("cur").innerHTML=banner(l);
  if(l){const nms=l.crew.map(c=>c.name),key=nms.join("|");if($("rsp").dataset.k!==key){$("rsp").innerHTML=nms.map(n=>`<option>${esc(n)}</option>`).join("");$("rsp").dataset.k=key}}
  if(l){$("cinfo").textContent=`Текущая смена: №${l.num} от ${fmt(l)}`;
   const mine=uid===l.handBy;$("acc").hidden=mine;
@@ -412,7 +439,12 @@ function crewRow(pos="",name=""){
 }
 function fillShift(s){$("d").value=s?s.d:pad(new Date().getDate());$("m").value=s?s.m:pad(new Date().getMonth()+1);$("y").value=s?s.y:"";
  $("num").value=s?s.num:"";$("fh").value=s&&s.fh!=null?+s.fh:8;$("fm").value=s&&s.fm?s.fm:"00";$("uh").value=s&&s.uh!=null?+s.uh:20;$("um").value=s&&s.um?s.um:"00";
- $("crew").innerHTML="";(s?s.crew:[]).forEach(c=>crewRow(c.pos,c.name))}
+ $("crew").innerHTML="";(s?s.crew:[]).forEach(c=>crewRow(c.pos,c.name));fillTeam(s)}
+function autoCrew(){const t=$("nteam").value;if(!t)return;$("crew").innerHTML="";
+ Object.keys(prof).filter(i=>prof[i].team===t&&prof[i].deptId&&prof[i].deptId===J.deptId).forEach(i=>crewRow(roles[i]?.position||"",prof[i].name))}
+function fillTeam(s){const m=prof[uid]||{};$("nteam").innerHTML='<option value="">—</option>'+teams.map(t=>`<option>${esc(t)}</option>`).join("");
+ $("nteam").value=s?s.team||"":m.team||"";$("nteam").disabled=!isOwner||!!s;if(!s)autoCrew()}
+$("nteam").onchange=()=>{if(!shEd)autoCrew()};
 $("newb").onclick=()=>{const l=latest();if(l&&!(l.accBy||isOwner))return toast("Сначала предыдущую смену должна принять следующая смена.");
  shEd=null;$("ndt").textContent="Новая смена";$("mk").textContent="Создать";fillShift(null);$("nd").showModal()};
 function openShift(id){const s=shifts.find(x=>x.id===id);if(!s||!canEdit(s.by))return;shEd=id;
@@ -424,26 +456,44 @@ $("mk").onclick=()=>safe(async()=>{
  const crew=[...$("crew").children].map(r=>{const i=r.querySelectorAll("input");return{pos:i[0].value.trim(),name:i[1].value.trim(),uid:uidOf(i[1].value)}}).filter(c=>c.name);
  if(!crew.length)return toast("Добавьте хотя бы одного человека в состав смены (кнопка ＋)");
  if(!$("d").value||!$("m").value||!$("y").value||!$("num").value)return toast("Укажите число и номер смены");
+ if(!shEd&&!$("nteam").value)return toast("Укажите бригаду смены");
  const f={d:$("d").value,m:$("m").value,y:$("y").value,num:$("num").value,fh:$("fh").value,fm:$("fm").value,uh:$("uh").value,um:$("um").value,crew};
  if(shEd)await db.doc("shifts/"+shEd).update(f);
- else{await db.doc("shifts/s"+Date.now()).set({...f,j:curJ,ink,by:uid,createdAt:Date.now(),...(pickAt!=null?{at:pickAt}:{})});pickAt=null;}
+ else{await db.doc("shifts/s"+Date.now()).set({...f,team:$("nteam").value,j:curJ,ink,by:uid,createdAt:Date.now(),...(pickAt!=null?{at:pickAt}:{})});pickAt=null;}
  $("nd").close();if(!shEd)goLast();});
 // owner panel
+let avData;
+function openProfile(){const p=prof[uid]||{},r=roles[uid]||{};avData=undefined;
+ $("pav").innerHTML=av(p,72);$("pn").value=p.name||"";$("pex").value=p.exp==null?"":p.exp;$("pdc").value=p.discord||"";$("pab").value=p.about||"";
+ $("pro").innerHTML=`<span>Должность:</span> <b>${esc(r.position||"—")}</b> · <span>Смена (бригада):</span> <b>${esc(p.team||"—")}</b> · <span>Цех:</span> <b>${esc(p.dept||"—")}</b>`;
+ $("pd").showModal()}
+$("pfile").onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();
+ im.onload=()=>{const c=document.createElement("canvas");c.width=c.height=128;const sz=Math.min(im.width,im.height);
+  c.getContext("2d").drawImage(im,(im.width-sz)/2,(im.height-sz)/2,sz,sz,0,0,128,128);avData=c.toDataURL("image/jpeg",.82);
+  $("pav").innerHTML=av({avatar:avData},72);URL.revokeObjectURL(im.src)};im.src=URL.createObjectURL(f)};
+$("pavc").onclick=()=>{avData=null;$("pav").innerHTML=av({name:$("pn").value},72)};
+$("pcl").onclick=()=>$("pd").close();
+$("psv").onclick=()=>safe(async()=>{const n=$("pn").value.trim();if(!n)return toast("Укажите фамилию");
+ const o={name:n,about:$("pab").value.trim(),discord:$("pdc").value.trim(),exp:$("pex").value===""?null:Math.max(0,Math.min(80,+$("pex").value))};
+ if(avData!==undefined)o.avatar=avData;await db.doc("profiles/"+uid).update(o);$("pd").close();toast("Профиль сохранён")});
 function renderUsers(){
  if(!isOwner||!$("od").open)return;
- const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i));
- $("users").innerHTML=ids.length?`<table>${ids.map(i=>`<tr><td><img src="${prof[i].sig||""}" height="28" alt=""></td><td>${esc(prof[i].name)}</td>
+ const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i)),dl=depts.length?depts:DEPT;
+ $("users").innerHTML=ids.length?`<table>${ids.map(i=>{const p=prof[i],r=roles[i]||{};return`<tr data-u="${i}"><td>${av(p,32)}</td><td><b>${esc(p.name)}</b><div class="hint">${p.exp!=null?`<span>Стаж:</span> ${esc(p.exp)} `:""}${p.discord?"· "+esc(p.discord):""}</div></td>
  <td><select data-f="1">${FONTS.map((f,k)=>`<option value="${k}" style="font-family:'${f}'"${fo(i)===k?" selected":""}>Почерк ${k+1}</option>`).join("")}</select></td>
- ${i===uid?`<td colspan="3" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(p=>`<option${roles[i]?.position===p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
- <td><label><input type="checkbox"${roles[i]?.approved?" checked":""}> разрешено</label></td><td><button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
- [...$("users").querySelectorAll("tr")].forEach((tr,k)=>tr.dataset.u=ids[k]);
+ ${i===uid?`<td colspan="5" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(x=>`<option${r.position===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
+ <td><select data-t="1"><option value="">—</option>${teams.map(x=>`<option${p.team===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
+ <td><select data-d="1"><option value="">—</option>${dl.map(x=>`<option${p.dept===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
+ <td><label><input type="checkbox"${r.approved?" checked":""}> разрешено</label></td>
+ <td><button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`}).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
 }
 $("users").onclick=e=>{const b=e.target.closest("[data-del]");if(!b)return;const id=b.closest("tr").dataset.u;if(id===uid)return toast("Нельзя удалить самого себя");
  if(!confirm(tr("Удалить пользователя?")+"\n"+(prof[id]?prof[id].name:"")))return;
  safe(async()=>{fail((await sb.rpc("delete_user",{target:id})).error);await reload("profiles");toast("Пользователь удалён")})};
-$("users").onchange=e=>safe(async()=>{const tr=e.target.closest("tr");if(!tr)return;
- if(e.target.dataset.f)return await db.doc("profiles/"+tr.dataset.u).update({font:+e.target.value});
- await db.doc("roles/"+tr.dataset.u).set({position:tr.querySelector("[data-p]").value,approved:tr.querySelector("input").checked});});
+$("users").onchange=e=>safe(async()=>{const tr=e.target.closest("tr");if(!tr)return;const id=tr.dataset.u;
+ if(e.target.dataset.f)return await db.doc("profiles/"+id).update({font:+e.target.value});
+ await db.doc("roles/"+id).set({position:tr.querySelector("[data-p]").value,team:tr.querySelector("[data-t]").value,dept:tr.querySelector("[data-d]").value,approved:tr.querySelector("input").checked});});
+$("tsv").onclick=()=>safe(async()=>{await db.doc("config/teams").set({list:$("tl").value.split("\n").map(x=>x.trim()).filter(Boolean)});toast("Смены сохранены")});
 $("ps").onclick=()=>safe(async()=>{await db.doc("config/positions").set({list:$("pl").value.split("\n").map(s=>s.trim()).filter(Boolean)});toast("Должности сохранены")});
 let jEd=null;
 $("jcs").innerHTML=COLORS.map(c=>`<span class="ink" data-c="${c}" style="background:${c}"></span>`).join(" ");
@@ -507,24 +557,25 @@ const all=()=>{
 // ===================== Supabase: шар зв'язку з базою =====================
 const SB_URL="https://oepqtzfhajkimgfspxeb.supabase.co",SB_KEY="sb_publishable_Lu5wT5MLx6Izns667XKtSg_2W44ErxY";
 const sb=supabase.createClient(SB_URL,SB_KEY);
-const RAW={},SUBS={},ORD={profiles:"created_at",departments:"sort",positions:"sort",journals:"created_at",shifts:"created_at",entries:"created_at"};
+let teams=[];const RAW={},SUBS={},ORD={profiles:"created_at",departments:"sort",positions:"sort",teams:"sort",journals:"created_at",shifts:"created_at",entries:"created_at"};
 const isU=s=>/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(s||""),tsn=x=>x?Date.parse(x):0;
 const dName=id=>((RAW.departments||[]).find(d=>d.id===id)||{}).name,dId=n=>((RAW.departments||[]).find(d=>d.name===n)||{}).id||null;
 const g_=o=>o||{};
 const MAP={
- profiles:r=>({name:r.full_name,sig:r.signature,createdAt:tsn(r.created_at),font:r.font}),
+ profiles:r=>({name:r.full_name,sig:r.signature,createdAt:tsn(r.created_at),font:r.font,avatar:r.avatar,about:r.about||"",exp:r.experience,discord:r.discord||"",team:r.team||"",deptId:r.dept_id,dept:dName(r.dept_id)||""}),
  roles:r=>({position:r.position||"",approved:!!r.approved||r.role==="owner"}),
- journals:r=>({name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",createdAt:tsn(r.created_at),by:r.created_by}),
- shifts:r=>({j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
+ journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",createdAt:tsn(r.created_at),by:r.created_by}),
+ shifts:r=>({team:r.team,j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
   handBy:r.hand_by,handName:r.hand_name,handLabel:r.hand_label,handInk:r.hand_ink,handSgS:g_(r.hand_sg).s,handSgX:g_(r.hand_sg).x,handSgY:g_(r.hand_sg).y,handNoSg:g_(r.hand_sg).nosg,
   accBy:r.acc_by,accName:r.acc_name,accLabel:r.acc_label,accInk:r.acc_ink,accTime:r.acc_at,accSgS:g_(r.acc_sg).s,accSgX:g_(r.acc_sg).x,accSgY:g_(r.acc_sg).y,accNoSg:g_(r.acc_sg).nosg}),
  entries:r=>({j:r.journal_id,shift:r.shift_id,uid:r.author,type:"note",time:r.time,text:r.body,vz:r.visa||"",ink:r.ink,ts:tsn(r.created_at),at:r.at_row,sgBy:r.sig_by||undefined,sgS:g_(r.sig).s,sgX:g_(r.sig).x,sgY:g_(r.sig).y,nosg:g_(r.sig).nosg})
 };
 const SRC={profiles:"profiles",roles:"profiles",journals:"journals",shifts:"shifts",entries:"entries"};
-const AFFECT={profiles:["profiles","roles"],departments:["config/depts","journals"],positions:["config/positions"],journals:["journals"],shifts:["shifts"],entries:["entries"]};
+const AFFECT={profiles:["profiles","roles"],departments:["config/depts","journals"],positions:["config/positions"],teams:["config/teams"],journals:["journals"],shifts:["shifts"],entries:["entries"]};
 function emit(k,only){(only?[only]:SUBS[k]||[]).forEach(cb=>{try{
  if(k==="config/depts")cb({exists:true,data:()=>({list:(RAW.departments||[]).map(d=>d.name)})});
  else if(k==="config/positions")cb({exists:true,data:()=>({list:(RAW.positions||[]).map(p=>p.name)})});
+ else if(k==="config/teams")cb({exists:true,data:()=>({list:(RAW.teams||[]).map(p=>p.name)})});
  else cb({docs:(RAW[SRC[k]]||[]).map(r=>({id:r.id,data:()=>MAP[k](r)}))})}catch(e){console.error(e)}})}
 async function fetchAll(t){let out=[],i=0;for(;;){let q=sb.from(t).select("*").order(ORD[t]).range(i,i+999);if(t==="entries")q=q.is("deleted_at",null);
  const{data,error}=await q;if(error)throw error;out=out.concat(data);if(data.length<1000)break;i+=1000}return out}
@@ -534,7 +585,7 @@ const fail=e=>{if(e)throw new Error(e.message||e.code)};
 const ROW={
  journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;return r},
- shifts:(o,cur)=>{const r={},m={d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
+ shifts:(o,cur)=>{const r={},m={team:"team",d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("fh"in o)r.fh=+o.fh;if("uh"in o)r.uh=+o.uh;if("accTime"in o)r.acc_at=new Date().toISOString();
   ["hand","acc"].forEach(p=>{const ks={s:p+"SgS",x:p+"SgX",y:p+"SgY",nosg:p+"NoSg"};
    if(Object.values(ks).some(k=>k in o)){const g={s:cur[ks.s],x:cur[ks.x],y:cur[ks.y],nosg:cur[ks.nosg]};for(const q in ks)if(ks[q]in o)g[q]=o[ks[q]];r[p+"_sg"]=g}});return r},
@@ -549,15 +600,15 @@ async function cfgSet(id,list){
   for(let i=0;i<list.length;i++){const ex=cur.find(d=>d.name===list[i]);
    fail((ex?await sb.from("departments").update({sort:i+1}).eq("id",ex.id):await sb.from("departments").insert({name:list[i],sort:i+1})).error)}
   return reload("departments")}
- const cur=RAW.positions||[];
- for(const p of cur)if(!list.includes(p.name))fail((await sb.from("positions").delete().eq("name",p.name)).error);
- for(let i=0;i<list.length;i++)fail((await sb.from("positions").upsert({name:list[i],sort:i+1})).error);
- return reload("positions")}
+ const t=id==="teams"?"teams":"positions",cur=RAW[t]||[];
+ for(const p of cur)if(!list.includes(p.name))fail((await sb.from(t).delete().eq("name",p.name)).error);
+ for(let i=0;i<list.length;i++)fail((await sb.from(t).upsert({name:list[i],sort:i+1})).error);
+ return reload(t)}
 async function put(c,id,o,isSet){
  if(c==="config")return cfgSet(id,o.list||[]);
  let t=c,row;
- if(c==="profiles"){row={};if("name"in o)row.full_name=o.name;if("sig"in o)row.signature=o.sig;if("font"in o&&isOwner)row.font=o.font}
- else if(c==="roles"){t=c="profiles";row={position:o.position||null,approved:!!o.approved}}
+ if(c==="profiles"){row={};if("name"in o)row.full_name=o.name;if("sig"in o)row.signature=o.sig;if("font"in o&&isOwner)row.font=o.font;if("avatar"in o)row.avatar=o.avatar;if("about"in o)row.about=o.about||null;if("discord"in o)row.discord=o.discord||null;if("exp"in o)row.experience=o.exp}
+ else if(c==="roles"){t=c="profiles";row={position:o.position||null,approved:!!o.approved,team:o.team||null};if("dept"in o)row.dept_id=dId(o.dept)}
  else{const cur=(c==="journals"?jrs:c==="shifts"?allS:allE).find(x=>x.id===id)||{};row=ROW[c](o,cur)}
  if(!Object.keys(row).length)return;
  let q;
@@ -628,6 +679,7 @@ function showReset(){$("auth").hidden=false;$("reg").hidden=true;$("app").hidden
  sub("entries",d=>{allE=d.map(x=>({id:x.id,...x.data()}))});
  db.doc("config/depts").onSnapshot(s=>{depts=s.data().list;all()});
  db.doc("config/positions").onSnapshot(s=>{positions=s.data().list;all()});
+ db.doc("config/teams").onSnapshot(s=>{teams=s.data().list;all()});
  live();all();
 })();
 
@@ -660,7 +712,11 @@ uk:{
 "Назад ко входу":"Назад до входу","Новый пароль":"Новий пароль","Сохранить пароль":"Зберегти пароль","Завершение регистрации: ваша подпись":"Завершення реєстрації: ваш підпис","Неверная почта или пароль":"Неправильна пошта або пароль","Почта не подтверждена. Проверьте письмо.":"Пошту не підтверджено. Перевірте лист.",
 "Эта почта уже зарегистрирована":"Ця пошта вже зареєстрована","Пароль должен быть не короче 6 символов":"Пароль має бути не коротшим за 6 символів","Пароли не совпадают":"Паролі не збігаються","Укажите почту":"Вкажіть пошту","Укажите фамилию":"Вкажіть прізвище","Нарисуйте подпись":"Намалюйте підпис",
 "Слишком много попыток. Подождите и повторите.":"Забагато спроб. Зачекайте й повторіть.","Проверьте почту и подтвердите адрес, затем войдите.":"Перевірте пошту й підтвердьте адресу, потім увійдіть.","Письмо для сброса пароля отправлено.":"Лист для скидання пароля надіслано.","Пароль изменён.":"Пароль змінено.",
-"Удалить пользователя?":"Видалити користувача?","Пользователь удалён":"Користувача видалено","Удалить":"Видалити","Нельзя удалить самого себя":"Не можна видалити самого себе","Ошибка связи с базой: ":"Помилка зв'язку з базою: "
+"Удалить пользователя?":"Видалити користувача?","Пользователь удалён":"Користувача видалено","Удалить":"Видалити","Нельзя удалить самого себя":"Не можна видалити самого себе","👤 Профиль":"👤 Профіль","Мой профиль":"Мій профіль","Стаж (лет):":"Стаж (років):","Коротко о себе":"Коротко про себе","Убрать аватар":"Прибрати аватар","Должность:":"Посада:","Смена (бригада):":"Зміна (бригада):","Цех:":"Цех:","Стаж:":"Стаж:",
+"Профиль сохранён":"Профіль збережено","Бригада смены:":"Бригада зміни:","Смены (бригады)":"Зміни (бригади)","(например: 1 (А); каждая с новой строки)":"(наприклад: 1 (А); кожна з нового рядка)","Сохранить смены":"Зберегти зміни","Смены сохранены":"Зміни збережено","Укажите бригаду смены":"Вкажіть бригаду зміни",
+"Текущая смена:":"Поточна зміна:","Право записи имеют:":"Право запису мають:","никого":"ніхто","Смена не открыта":"Зміну не відкрито","открыта":"відкрита","принята":"прийнята","ожидает приёма":"очікує прийому",
+"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":"Власник ще не призначив вам зміну (бригаду): писати не можна.","Вы можете писать только в журналах своего цеха.":"Ви можете писати лише в журналах свого цеху.",
+"Ошибка связи с базой: ":"Помилка зв'язку з базою: "
 },
 en:{
 "📓 Оперативный журнал смены":"📓 Shift operations log","Оперативный журнал смены":"Shift operations log","Нарисуйте свою подпись (мышью или пальцем):":"Draw your signature (mouse or finger):","Очистить":"Clear","Зарегистрироваться":"Register",
@@ -689,7 +745,11 @@ en:{
 "Назад ко входу":"Back to login","Новый пароль":"New password","Сохранить пароль":"Save password","Завершение регистрации: ваша подпись":"Finish registration: your signature","Неверная почта или пароль":"Wrong email or password","Почта не подтверждена. Проверьте письмо.":"Email not confirmed. Check your inbox.",
 "Эта почта уже зарегистрирована":"This email is already registered","Пароль должен быть не короче 6 символов":"Password must be at least 6 characters","Пароли не совпадают":"Passwords do not match","Укажите почту":"Enter your email","Укажите фамилию":"Enter your name","Нарисуйте подпись":"Draw your signature",
 "Слишком много попыток. Подождите и повторите.":"Too many attempts. Wait and try again.","Проверьте почту и подтвердите адрес, затем войдите.":"Check your email and confirm the address, then log in.","Письмо для сброса пароля отправлено.":"Password reset email sent.","Пароль изменён.":"Password changed.",
-"Удалить пользователя?":"Delete this user?","Пользователь удалён":"User deleted","Удалить":"Delete","Нельзя удалить самого себя":"You cannot delete yourself","Ошибка связи с базой: ":"Database connection error: "
+"Удалить пользователя?":"Delete this user?","Пользователь удалён":"User deleted","Удалить":"Delete","Нельзя удалить самого себя":"You cannot delete yourself","👤 Профиль":"👤 Profile","Мой профиль":"My profile","Стаж (лет):":"Experience (years):","Коротко о себе":"A few words about yourself","Убрать аватар":"Remove avatar","Должность:":"Position:","Смена (бригада):":"Shift (team):","Цех:":"Shop:","Стаж:":"Exp.:",
+"Профиль сохранён":"Profile saved","Бригада смены:":"Shift team:","Смены (бригады)":"Shifts (teams)","(например: 1 (А); каждая с новой строки)":"(e.g. 1 (A); one per line)","Сохранить смены":"Save shifts","Смены сохранены":"Shifts saved","Укажите бригаду смены":"Select the shift team",
+"Текущая смена:":"Current shift:","Право записи имеют:":"Can write:","никого":"nobody","Смена не открыта":"No shift is open","открыта":"open","принята":"accepted","ожидает приёма":"waiting for acceptance",
+"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":"The owner has not assigned you a shift (team) yet: you cannot write.","Вы можете писать только в журналах своего цеха.":"You can only write in your own shop's journals.",
+"Ошибка связи с базой: ":"Database connection error: "
 }};
 const TRP=[
 [/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
@@ -701,6 +761,8 @@ const TRP=[
 [/^(.*) · смена №(.*)$/,{uk:"$1 · зміна №$2",en:"$1 · shift #$2"}],
 [/^Инв\. № (.*)$/,{uk:"Інв. № $1",en:"Inv. No. $1"}],
 [/^Страниц: (\d+)$/,{uk:"Сторінок: $1",en:"Pages: $1"}],
+[/^Смена №(.*) от (.*)$/,{uk:"Зміна №$1 від $2",en:"Shift #$1 of $2"}],
+[/^Режим просмотра: писать могут только пользователи текущей смены \((.*)\)\.$/,{uk:"Режим перегляду: писати можуть лише користувачі поточної зміни ($1).",en:"View-only mode: only users of the current shift ($1) can write."}],
 [/^Ошибка: (.*)$/,{uk:"Помилка: $1",en:"Error: $1"}],
 [/^Помилка зв'язку з базою: (.*)$/,{uk:"Помилка зв'язку з базою: $1",en:"Database connection error: $1"}]
 ];
