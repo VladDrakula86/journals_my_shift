@@ -18,6 +18,7 @@ button,select,input,textarea{font:inherit}
 button{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer}
 button.ghost{background:transparent;color:var(--fg);border:1px solid var(--acc)}
 select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;background:#fffdf6;color:#222}
+#lang button{padding:3px 8px;font-size:12px}
 .card{background:var(--card);border-radius:8px;padding:12px;margin:10px 0}
 .hint{opacity:.75}
 canvas{background:#fffdf6;border:1px dashed #8a7d66;border-radius:6px;touch-action:none;width:100%;max-width:560px;height:auto;display:block}
@@ -71,20 +72,31 @@ button.chip.on{background:var(--acc);color:#fff}
 .nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:8px 0}
 label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=range]{flex:1}
 </style></head><body><main>
-<div class="bar"><h1>📓 Оперативный журнал смены</h1><div id="bar"></div></div>
+<div class="bar"><h1>📓 Оперативный журнал смены</h1><div id="lang" class="g" data-ru><button data-l="uk" class="ghost" type="button">UA</button><button data-l="ru" class="ghost" type="button">RU</button><button data-l="en" class="ghost" type="button">EN</button></div><div id="bar"></div></div>
 <div id="msg" class="hint"></div>
-<div id="auth" class="card" hidden>
- <b>Вхід / реєстрація</b>
- <div class="g"><input id="ae" type="email" placeholder="Пошта" style="flex:1;min-width:180px"><input id="ap" type="password" placeholder="Пароль (від 6 символів)" style="flex:1;min-width:160px"></div>
- <div class="g"><input id="an" placeholder="Прізвище І.О. (лише для реєстрації)" style="flex:1;min-width:180px"><select id="ad"></select></div>
- <div class="g"><button id="ain">Увійти</button><button class="ghost" id="aup">Зареєструватися</button></div>
- <p class="hint">Після реєстрації власник журналу підтверджує вас і призначає посаду.</p>
+<div id="auth" class="card" hidden style="max-width:460px;margin:30px auto">
+ <div class="g"><button id="tlog" type="button">Вход</button><button class="ghost" id="treg" type="button">Регистрация</button></div>
+ <p id="aerr" class="hint" style="color:#b3261e;min-height:1.4em;margin:4px 0"></p>
+ <form id="flog" autocomplete="on"><div class="g"><input id="ae" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
+  <div class="g"><input id="ap" type="password" autocomplete="current-password" placeholder="Пароль" style="flex:1;min-width:200px" required></div>
+  <div class="g"><button id="ain" type="submit">Войти</button><a href="#" id="lfg" class="hint">Забыли пароль?</a></div></form>
+ <form id="freg" hidden><div class="g"><input id="ge" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
+  <div class="g"><input id="gp" type="password" autocomplete="new-password" placeholder="Пароль" style="flex:1;min-width:140px" required><input id="gp2" type="password" autocomplete="new-password" placeholder="Повторите пароль" style="flex:1;min-width:140px" required></div>
+  <div class="g"><input id="an" placeholder="Фамилия И.О. (как в журнале)" style="flex:1;min-width:200px" required></div>
+  <div class="g"><select id="ad" style="flex:1"></select></div>
+  <p class="hint" style="margin:6px 0 2px">Ваша подпись (мышью или пальцем):</p><div id="sgbox"></div>
+  <div class="g"><button class="ghost" id="sgc2" type="button">Очистить</button><button id="aup" type="submit">Создать аккаунт</button></div>
+  <p class="hint">После регистрации владелец журнала подтверждает вас и назначает должность.</p></form>
+ <form id="frst" hidden><div class="g"><input id="re" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
+  <div class="g"><button id="rsb" type="submit">Отправить ссылку для сброса</button><a href="#" id="lback" class="hint">Назад ко входу</a></div></form>
+ <form id="fnew" hidden><div class="g"><input id="np" type="password" autocomplete="new-password" placeholder="Новый пароль" style="flex:1;min-width:200px" required></div>
+  <div class="g"><button type="submit">Сохранить пароль</button></div></form>
 </div>
 <div id="reg" class="card" hidden>
- <b>Завершення реєстрації: ваш підпис</b>
+ <b>Завершение регистрации: ваша подпись</b>
  <div class="g"><input id="rn" placeholder="Фамилия И.О." style="flex:1;min-width:180px"></div>
  <p class="hint">Нарисуйте свою подпись (мышью или пальцем):</p>
- <canvas id="sg" width="560" height="280"></canvas>
+ <div id="sgholder"><canvas id="sg" width="560" height="280"></canvas></div>
  <div class="g"><button class="ghost" id="sgc">Очистить</button><button id="rok">Зарегистрироваться</button></div>
 </div>
 <div id="app" hidden>
@@ -180,7 +192,7 @@ const rank=id=>Object.keys(prof).sort((a,b)=>(prof[a].createdAt||0)-(prof[b].cre
 const fontOf=id=>{const f=prof[id]?.font;return FONTS[(f!=null?+f:Math.max(0,rank(id)))%FONTS.length]};
 const pickFont=()=>{const c=FONTS.map(()=>0);Object.keys(prof).forEach(i=>c[FONTS.indexOf(fontOf(i))]++);return c.indexOf(Math.min(...c))};
 const approved=()=>isOwner||!!roles[uid]?.approved;
-const toast=t=>{$("msg").textContent=t;setTimeout(()=>{if($("msg").textContent===t)$("msg").textContent=""},5000)};
+let toastN=0;const toast=t=>{$("msg").textContent=t;delete $("msg").dataset.w;const k=++toastN;setTimeout(()=>{if(toastN===k)$("msg").textContent=""},5000)};
 const safe=async f=>{try{await f()}catch(e){toast("Ошибка: "+(e.message||e.code||e))}};
 const latest=()=>[...shifts].sort((a,b)=>a.createdAt-b.createdAt).pop();
 const maxp=()=>+J.pages||100;
@@ -212,8 +224,8 @@ function renderBar(){
  b.innerHTML=`<span class="hint">${esc(p.name)}${roles[uid]?.position?" · "+esc(roles[uid].position):""}</span> `+(isOwner?`<button class="ghost" id="ob">⚙ Управление</button>`:"")+` <button class="ghost" id="lo">Выйти</button>`;$("lo").onclick=()=>sb.auth.signOut();
  if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("dl").value=(depts.length?depts:DEPT).join("\n");renderUsers();$("od").showModal()};
  $("ownh").hidden=!approved();$("jset").hidden=!isOwner;$("xb").hidden=!isOwner;$("jnew").hidden=!isOwner;
- if(!approved())$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";
- else if($("msg").textContent.startsWith("Ожидайте"))$("msg").textContent="";
+ if(!approved()){$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";$("msg").dataset.w="1"}
+ else if($("msg").dataset.w){$("msg").textContent="";delete $("msg").dataset.w}
  $("newb").hidden=!approved();
 }
 const nm=x=>String(x||"").toLowerCase().replace(/[\s.,]/g,"");
@@ -422,10 +434,13 @@ function renderUsers(){
  const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i));
  $("users").innerHTML=ids.length?`<table>${ids.map(i=>`<tr><td><img src="${prof[i].sig||""}" height="28" alt=""></td><td>${esc(prof[i].name)}</td>
  <td><select data-f="1">${FONTS.map((f,k)=>`<option value="${k}" style="font-family:'${f}'"${fo(i)===k?" selected":""}>Почерк ${k+1}</option>`).join("")}</select></td>
- ${i===uid?`<td colspan="2" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(p=>`<option${roles[i]?.position===p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
- <td><label><input type="checkbox"${roles[i]?.approved?" checked":""}> разрешено</label></td>`}</tr>`).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
+ ${i===uid?`<td colspan="3" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(p=>`<option${roles[i]?.position===p?" selected":""}>${esc(p)}</option>`).join("")}</select></td>
+ <td><label><input type="checkbox"${roles[i]?.approved?" checked":""}> разрешено</label></td><td><button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
  [...$("users").querySelectorAll("tr")].forEach((tr,k)=>tr.dataset.u=ids[k]);
 }
+$("users").onclick=e=>{const b=e.target.closest("[data-del]");if(!b)return;const id=b.closest("tr").dataset.u;if(id===uid)return toast("Нельзя удалить самого себя");
+ if(!confirm(tr("Удалить пользователя?")+"\n"+(prof[id]?prof[id].name:"")))return;
+ safe(async()=>{fail((await sb.rpc("delete_user",{target:id})).error);await reload("profiles");toast("Пользователь удалён")})};
 $("users").onchange=e=>safe(async()=>{const tr=e.target.closest("tr");if(!tr)return;
  if(e.target.dataset.f)return await db.doc("profiles/"+tr.dataset.u).update({font:+e.target.value});
  await db.doc("roles/"+tr.dataset.u).set({position:tr.querySelector("[data-p]").value,approved:tr.querySelector("input").checked});});
@@ -562,26 +577,49 @@ function live(){const tm={};
  sb.channel("jr").on("postgres_changes",{event:"*",schema:"public"},p=>{const t=p.table;if(!ORD[t])return;clearTimeout(tm[t]);tm[t]=setTimeout(()=>reload(t).catch(()=>{}),250)}).subscribe();
  setInterval(()=>Object.keys(ORD).forEach(t=>reload(t).catch(()=>{})),120000)}
 // ---- вхід і реєстрація ----
+const aerr=m=>{m=String(m&&(m.message||m.code)||m);
+ if(/Invalid login/i.test(m))return"Неверная почта или пароль";if(/not confirmed/i.test(m))return"Почта не подтверждена. Проверьте письмо.";
+ if(/already registered|already been registered/i.test(m))return"Эта почта уже зарегистрирована";if(/at least 6|weak/i.test(m))return"Пароль должен быть не короче 6 символов";
+ if(/rate limit|too many/i.test(m))return"Слишком много попыток. Подождите и повторите.";return m};
+const aset=m=>{$("aerr").textContent=m||""};
+const aform=n=>{["flog","freg","frst","fnew"].forEach(i=>$(i).hidden=i!==n);$("tlog").classList.toggle("ghost",n!=="flog"&&n!=="frst");$("treg").classList.toggle("ghost",n!=="freg");aset("");
+ if(n==="freg")$("sgbox").appendChild($("sg"))};
+let busyReg=false;
+async function savePending(id){try{const p=JSON.parse(localStorage.getItem("pendSig")||"null");if(!p)return;
+ await sb.from("profiles").update({signature:p.sig,full_name:p.name||undefined}).eq("id",id);localStorage.removeItem("pendSig")}catch(e){}}
 async function showAuth(){
- $("auth").hidden=false;
+ $("auth").hidden=false;$("reg").hidden=true;$("app").hidden=true;aform("flog");
  const{data}=await sb.from("departments").select("*").order("sort");
  $("ad").innerHTML='<option value="">— цех —</option>'+(data||[]).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join("");
- const cr=()=>({email:$("ae").value.trim(),password:$("ap").value});
- $("ain").onclick=()=>safe(async()=>{fail((await sb.auth.signInWithPassword(cr())).error)});
- $("aup").onclick=()=>safe(async()=>{const n=$("an").value.trim();if(!n)return toast("Вкажіть прізвище та ініціали");
-  const r=await sb.auth.signUp({...cr(),options:{data:{full_name:n,dept_id:$("ad").value}}});fail(r.error);
-  if(!r.data.session)toast("Підтвердіть пошту за листом, потім натисніть «Увійти».")});
+ $("tlog").onclick=()=>aform("flog");$("treg").onclick=()=>aform("freg");$("lfg").onclick=e=>{e.preventDefault();aform("frst")};
+ $("lback").onclick=e=>{e.preventDefault();aform("flog")};
+ const busy=(b,f)=>async e=>{e.preventDefault();aset("");b.disabled=true;try{await f()}catch(x){aset(aerr(x))}b.disabled=false;busyReg=false};
+ $("flog").onsubmit=busy($("ain"),async()=>{const em=$("ae").value.trim();if(!em)return aset("Укажите почту");fail((await sb.auth.signInWithPassword({email:em,password:$("ap").value})).error)});
+ $("frst").onsubmit=busy($("rsb"),async()=>{const em=$("re").value.trim();if(!em)return aset("Укажите почту");
+  fail((await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin})).error);aset("Письмо для сброса пароля отправлено.")});
+ $("freg").onsubmit=busy($("aup"),async()=>{const em=$("ge").value.trim(),n=$("an").value.trim(),p=$("gp").value;
+  if(!em)return aset("Укажите почту");if(!n)return aset("Укажите фамилию");if(p.length<6)return aset("Пароль должен быть не короче 6 символов");
+  if(p!==$("gp2").value)return aset("Пароли не совпадают");if(!drew)return aset("Нарисуйте подпись");
+  const sig=cv.toDataURL("image/png");busyReg=true;const r=await sb.auth.signUp({email:em,password:p,options:{data:{full_name:n,dept_id:$("ad").value}}});fail(r.error);
+  if(r.data.session){fail((await sb.from("profiles").update({signature:sig,full_name:n}).eq("id",r.data.session.user.id)).error);location.reload();return}
+  localStorage.setItem("pendSig",JSON.stringify({sig,name:n}));aform("flog");aset("Проверьте почту и подтвердите адрес, затем войдите.")});
+ $("sgc2").onclick=()=>{cx.clearRect(0,0,cv.width,cv.height);drew=false};
 }
+function showReset(){$("auth").hidden=false;$("reg").hidden=true;$("app").hidden=true;aform("fnew");
+ $("fnew").onsubmit=async e=>{e.preventDefault();aset("");try{const p=$("np").value;if(p.length<6)return aset("Пароль должен быть не короче 6 символов");
+  fail((await sb.auth.updateUser({password:p})).error);aset("Пароль изменён.");setTimeout(()=>{history.replaceState(null,"",location.pathname);location.reload()},900)}catch(x){aset(aerr(x))}}}
 (async()=>{
  let had=null;
- sb.auth.onAuthStateChange(e=>{if(had===null)return;if((e==="SIGNED_IN"&&!had)||(e==="SIGNED_OUT"&&had))location.reload()});
+ sb.auth.onAuthStateChange(e=>{if(e==="PASSWORD_RECOVERY"){had=true;return showReset()}if(had===null)return;if((e==="SIGNED_IN"&&!had&&!busyReg)||(e==="SIGNED_OUT"&&had))location.reload()});
  const{data}=await sb.auth.getSession();
+ if(had===true)return;
  had=!!data.session;
  if(!had)return showAuth();
  uid=data.session.user.id;
- try{await loadAll()}catch(e){return toast("Помилка зв'язку з базою: "+(e.message||e))}
+ await savePending(uid);
+ try{await loadAll()}catch(e){return toast("Ошибка связи с базой: "+(e.message||e))}
  const me=RAW.profiles.find(r=>r.id===uid);isOwner=!!me&&me.role==="owner";
- $("rn").value=me?me.full_name:"";
+ $("rn").value=me?me.full_name:"";$("sgholder").appendChild($("sg"));
  const sub=(c,fn)=>db.collection(c).onSnapshot(s=>{fn(s.docs);all()});
  sub("profiles",d=>{prof={};d.forEach(x=>prof[x.id]=x.data())});
  sub("roles",d=>{roles={};d.forEach(x=>roles[x.id]=x.data())});
@@ -592,5 +630,96 @@ async function showAuth(){
  db.doc("config/positions").onSnapshot(s=>{positions=s.data().list;all()});
  live();all();
 })();
+
+// ===================== Мови інтерфейсу (uk / ru / en); записи журналу лишаються російською =====================
+const TRD={
+uk:{
+"📓 Оперативный журнал смены":"📓 Оперативний журнал зміни","Оперативный журнал смены":"Оперативний журнал зміни","Нарисуйте свою подпись (мышью или пальцем):":"Намалюйте свій підпис (мишею або пальцем):","Очистить":"Очистити","Зарегистрироваться":"Зареєструватися",
+"＋ Новый журнал":"＋ Новий журнал","← К журналам":"← До журналів","+ Новая смена":"+ Нова зміна","⏭ К последней записи":"⏭ До останнього запису","⚙ Настройки журнала":"⚙ Налаштування журналу","🗑 Удаление…":"🗑 Видалення…",
+"Нажмите на свою запись или заголовок смены, чтобы изменить или удалить. Чтобы писать с определённой строки — нажмите на пустую клетку листа.":"Натисніть на свій запис або заголовок зміни, щоб змінити чи видалити. Щоб писати з певного рядка, натисніть на порожню клітинку аркуша.",
+"Режим просмотра: запись доступна только членам текущей смены.":"Режим перегляду: писати можуть лише члени поточної зміни.","Приём смены":"Прийом зміни","Подтвердить":"Підтвердити","Ручка:":"Ручка:","Время:":"Час:","сейчас":"зараз",
+"Место записи:":"Місце запису:","продолжение после предыдущей записи":"продовження після попереднього запису","сбросить":"скинути","xₙ нижний индекс":"xₙ нижній індекс","xⁿ верхний индекс":"xⁿ верхній індекс","пример: ^{235}_{92}U":"приклад: ^{235}_{92}U",
+"+ Виза / замечание":"+ Віза / зауваження","Отмена":"Скасувати","Добавить запись":"Додати запис","Ответственный по смене:":"Відповідальний по зміні:","Завершить смену":"Завершити зміну","Новая смена":"Нова зміна","Число:":"Число:","Смена №":"Зміна №","с":"з","до":"до",
+"Состав смены":"Склад зміни","＋ добавить (должность и Ф.И.О.)":"＋ додати (посада і ПІБ)","Создать":"Створити","Управление":"Керування","Подтверждение пользователей и их должности.":"Підтвердження користувачів та їхні посади.",
+"Подразделения (цеха)":"Підрозділи (цехи)","(каждое с новой строки)":"(кожен з нового рядка)","Сохранить подразделения":"Зберегти підрозділи","Список должностей":"Список посад","(подсказки для состава смены; каждая с новой строки)":"(підказки для складу зміни; кожна з нового рядка)",
+"Сохранить должности":"Зберегти посади","Закрыть":"Закрити","Редактирование записи":"Редагування запису","индексы: _{0}, ^{2}":"індекси: _{0}, ^{2}","Страница":"Сторінка","строка":"рядок","Подпись…":"Підпис…","Сохранить":"Зберегти","Удалить запись":"Видалити запис",
+"Журнал":"Журнал","страниц:":"сторінок:","Цвет обложки:":"Колір обкладинки:","Подпись на титульном листе от:":"Підпис на титульному аркуші від:","Удалить журнал":"Видалити журнал","Удаление записей":"Видалення записів","Только для владельца. Действие необратимо.":"Лише для власника. Дію не можна скасувати.",
+"Удалить смену с записями":"Видалити зміну із записами","Удалить ВСЕ записи журнала":"Видалити ВСІ записи журналу","Подпись от:":"Підпис від:","Подпись":"Підпис","Перетащите подпись мышью в нужное место. Размер — ползунком.":"Перетягніть підпис мишею в потрібне місце. Розмір змінюється повзунком.",
+"Размер":"Розмір","Чья подпись:":"Чий підпис:","не показывать подпись":"не показувати підпис","Сбросить положение":"Скинути положення",
+"Фамилия И.О.":"Прізвище І.О.","Текст записи… (Enter — новая строка, пробелы сохраняются)":"Текст запису… (Enter — новий рядок, пробіли зберігаються)","Визы, замечания…":"Візи, зауваження…","Текст записи":"Текст запису","Визы, замечания":"Візи, зауваження","Название журнала":"Назва журналу",
+"Инв. № …":"Інв. № …","Подразделение (надпись на титуле)":"Підрозділ (напис на титулі)","начат: дд.мм.гг":"розпочато: дд.мм.рр","окончен: дд.мм.гг":"закінчено: дд.мм.рр","Текст (напр. Смену сдал:)":"Текст (напр. Зміну здав:)","Должность":"Посада","Фамилия И.О. (выберите из списка)":"Прізвище І.О. (оберіть зі списку)",
+"Укажите фамилию и нарисуйте подпись":"Вкажіть прізвище і намалюйте підпис","Ожидайте подтверждения владельцем журнала — записывать пока нельзя.":"Очікуйте підтвердження власником журналу: писати поки не можна.","⚙ Управление":"⚙ Керування","Выйти":"Вийти",
+"Обложка":"Обкладинка","Титульный лист":"Титульний аркуш","Смена завершена. Ожидайте, пока следующая смена перечитает записи и примет её.":"Зміну завершено. Очікуйте, поки наступна зміна перечитає записи і прийме її.",
+"Предыдущая смена завершена. Перечитайте её записи и нажмите «Подтвердить» — ваши Ф.И.О. и подпись проставятся автоматически.":"Попередню зміну завершено. Перечитайте її записи й натисніть «Підтвердити»: ваші ПІБ і підпис проставляться автоматично.",
+"Подтвердить завершение?":"Підтвердити завершення?","Точно удалить?":"Точно видалити?","Сначала предыдущую смену должна принять следующая смена.":"Спершу попередню зміну має прийняти наступна зміна.","Редактирование заголовка смены":"Редагування заголовка зміни",
+"Добавьте хотя бы одного человека в состав смены (кнопка ＋)":"Додайте хоча б одну людину до складу зміни (кнопка ＋)","Укажите число и номер смены":"Вкажіть число і номер зміни","владелец":"власник","разрешено":"дозволено","Пока никто не зарегистрировался.":"Поки ніхто не зареєструвався.",
+"Должности сохранены":"Посади збережено","Настройки журнала":"Налаштування журналу","Новый журнал":"Новий журнал","— без подписи —":"— без підпису —","Точно удалить журнал?":"Точно видалити журнал?","Сдача смены":"Здача зміни","— выберите —":"— оберіть —","— смен нет —":"— змін немає —",
+"Точно? Нажмите ещё раз":"Точно? Натисніть ще раз","Смена удалена":"Зміну видалено","Все записи журнала удалены":"Усі записи журналу видалено","Подразделения сохранены":"Підрозділи збережено","Все":"Усі","В этом подразделении пока нет журналов.":"У цьому підрозділі поки немає журналів.","— цех —":"— цех —",
+"Вход":"Вхід","Регистрация":"Реєстрація","Почта":"Пошта","Пароль":"Пароль","Повторите пароль":"Повторіть пароль","Войти":"Увійти","Забыли пароль?":"Забули пароль?","Создать аккаунт":"Створити акаунт","Фамилия И.О. (как в журнале)":"Прізвище І.О. (як у журналі)",
+"Цех":"Цех","Ваша подпись (мышью или пальцем):":"Ваш підпис (мишею або пальцем):","После регистрации владелец журнала подтверждает вас и назначает должность.":"Після реєстрації власник журналу підтверджує вас і призначає посаду.","Отправить ссылку для сброса":"Надіслати посилання для скидання",
+"Назад ко входу":"Назад до входу","Новый пароль":"Новий пароль","Сохранить пароль":"Зберегти пароль","Завершение регистрации: ваша подпись":"Завершення реєстрації: ваш підпис","Неверная почта или пароль":"Неправильна пошта або пароль","Почта не подтверждена. Проверьте письмо.":"Пошту не підтверджено. Перевірте лист.",
+"Эта почта уже зарегистрирована":"Ця пошта вже зареєстрована","Пароль должен быть не короче 6 символов":"Пароль має бути не коротшим за 6 символів","Пароли не совпадают":"Паролі не збігаються","Укажите почту":"Вкажіть пошту","Укажите фамилию":"Вкажіть прізвище","Нарисуйте подпись":"Намалюйте підпис",
+"Слишком много попыток. Подождите и повторите.":"Забагато спроб. Зачекайте й повторіть.","Проверьте почту и подтвердите адрес, затем войдите.":"Перевірте пошту й підтвердьте адресу, потім увійдіть.","Письмо для сброса пароля отправлено.":"Лист для скидання пароля надіслано.","Пароль изменён.":"Пароль змінено.",
+"Удалить пользователя?":"Видалити користувача?","Пользователь удалён":"Користувача видалено","Удалить":"Видалити","Нельзя удалить самого себя":"Не можна видалити самого себе","Ошибка связи с базой: ":"Помилка зв'язку з базою: "
+},
+en:{
+"📓 Оперативный журнал смены":"📓 Shift operations log","Оперативный журнал смены":"Shift operations log","Нарисуйте свою подпись (мышью или пальцем):":"Draw your signature (mouse or finger):","Очистить":"Clear","Зарегистрироваться":"Register",
+"＋ Новый журнал":"＋ New journal","← К журналам":"← Back to journals","+ Новая смена":"+ New shift","⏭ К последней записи":"⏭ To the latest entry","⚙ Настройки журнала":"⚙ Journal settings","🗑 Удаление…":"🗑 Deletion…",
+"Нажмите на свою запись или заголовок смены, чтобы изменить или удалить. Чтобы писать с определённой строки — нажмите на пустую клетку листа.":"Click your entry or a shift header to edit or delete it. To write from a specific row, click an empty cell on the page.",
+"Режим просмотра: запись доступна только членам текущей смены.":"View-only mode: only members of the current shift can write.","Приём смены":"Shift acceptance","Подтвердить":"Confirm","Ручка:":"Pen:","Время:":"Time:","сейчас":"now",
+"Место записи:":"Entry position:","продолжение после предыдущей записи":"continue after the previous entry","сбросить":"reset","xₙ нижний индекс":"xₙ subscript","xⁿ верхний индекс":"xⁿ superscript","пример: ^{235}_{92}U":"example: ^{235}_{92}U",
+"+ Виза / замечание":"+ Visa / remark","Отмена":"Cancel","Добавить запись":"Add entry","Ответственный по смене:":"Shift supervisor:","Завершить смену":"End shift","Новая смена":"New shift","Число:":"Date:","Смена №":"Shift #","с":"from","до":"to",
+"Состав смены":"Shift crew","＋ добавить (должность и Ф.И.О.)":"＋ add (position and full name)","Создать":"Create","Управление":"Management","Подтверждение пользователей и их должности.":"Approve users and assign their positions.",
+"Подразделения (цеха)":"Departments (shops)","(каждое с новой строки)":"(one per line)","Сохранить подразделения":"Save departments","Список должностей":"Positions list","(подсказки для состава смены; каждая с новой строки)":"(suggestions for the shift crew; one per line)",
+"Сохранить должности":"Save positions","Закрыть":"Close","Редактирование записи":"Edit entry","индексы: _{0}, ^{2}":"indices: _{0}, ^{2}","Страница":"Page","строка":"row","Подпись…":"Signature…","Сохранить":"Save","Удалить запись":"Delete entry",
+"Журнал":"Journal","страниц:":"pages:","Цвет обложки:":"Cover color:","Подпись на титульном листе от:":"Title page signed by:","Удалить журнал":"Delete journal","Удаление записей":"Delete entries","Только для владельца. Действие необратимо.":"Owner only. This cannot be undone.",
+"Удалить смену с записями":"Delete shift with its entries","Удалить ВСЕ записи журнала":"Delete ALL journal entries","Подпись от:":"Signed by:","Подпись":"Signature","Перетащите подпись мышью в нужное место. Размер — ползунком.":"Drag the signature to the desired place. Use the slider for size.",
+"Размер":"Size","Чья подпись:":"Whose signature:","не показывать подпись":"hide signature","Сбросить положение":"Reset position",
+"Фамилия И.О.":"Surname I.P.","Текст записи… (Enter — новая строка, пробелы сохраняются)":"Entry text… (Enter — new line, spaces are kept)","Визы, замечания…":"Visas, remarks…","Текст записи":"Entry text","Визы, замечания":"Visas, remarks","Название журнала":"Journal name",
+"Инв. № …":"Inv. No. …","Подразделение (надпись на титуле)":"Department (title page text)","начат: дд.мм.гг":"started: dd.mm.yy","окончен: дд.мм.гг":"finished: dd.mm.yy","Текст (напр. Смену сдал:)":"Text (e.g. Shift handed over:)","Должность":"Position","Фамилия И.О. (выберите из списка)":"Surname I.P. (pick from the list)",
+"Укажите фамилию и нарисуйте подпись":"Enter your name and draw your signature","Ожидайте подтверждения владельцем журнала — записывать пока нельзя.":"Wait for the owner's approval: you cannot write yet.","⚙ Управление":"⚙ Management","Выйти":"Log out",
+"Обложка":"Cover","Титульный лист":"Title page","Смена завершена. Ожидайте, пока следующая смена перечитает записи и примет её.":"The shift is finished. Wait until the next shift reviews the entries and accepts it.",
+"Предыдущая смена завершена. Перечитайте её записи и нажмите «Подтвердить» — ваши Ф.И.О. и подпись проставятся автоматически.":"The previous shift is finished. Review its entries and press “Confirm”: your name and signature will be added automatically.",
+"Подтвердить завершение?":"Confirm ending?","Точно удалить?":"Really delete?","Сначала предыдущую смену должна принять следующая смена.":"The previous shift must first be accepted by the next shift.","Редактирование заголовка смены":"Edit shift header",
+"Добавьте хотя бы одного человека в состав смены (кнопка ＋)":"Add at least one person to the shift crew (the ＋ button)","Укажите число и номер смены":"Enter the date and shift number","владелец":"owner","разрешено":"approved","Пока никто не зарегистрировался.":"No one has registered yet.",
+"Должности сохранены":"Positions saved","Настройки журнала":"Journal settings","Новый журнал":"New journal","— без подписи —":"— no signature —","Точно удалить журнал?":"Really delete the journal?","Сдача смены":"Shift handover","— выберите —":"— choose —","— смен нет —":"— no shifts —",
+"Точно? Нажмите ещё раз":"Sure? Click again","Смена удалена":"Shift deleted","Все записи журнала удалены":"All journal entries deleted","Подразделения сохранены":"Departments saved","Все":"All","В этом подразделении пока нет журналов.":"There are no journals in this department yet.","— цех —":"— shop —",
+"Вход":"Log in","Регистрация":"Register","Почта":"Email","Пароль":"Password","Повторите пароль":"Repeat password","Войти":"Log in","Забыли пароль?":"Forgot password?","Создать аккаунт":"Create account","Фамилия И.О. (как в журнале)":"Surname I.P. (as in the journal)",
+"Цех":"Shop","Ваша подпись (мышью или пальцем):":"Your signature (mouse or finger):","После регистрации владелец журнала подтверждает вас и назначает должность.":"After registration the journal owner approves you and assigns a position.","Отправить ссылку для сброса":"Send reset link",
+"Назад ко входу":"Back to login","Новый пароль":"New password","Сохранить пароль":"Save password","Завершение регистрации: ваша подпись":"Finish registration: your signature","Неверная почта или пароль":"Wrong email or password","Почта не подтверждена. Проверьте письмо.":"Email not confirmed. Check your inbox.",
+"Эта почта уже зарегистрирована":"This email is already registered","Пароль должен быть не короче 6 символов":"Password must be at least 6 characters","Пароли не совпадают":"Passwords do not match","Укажите почту":"Enter your email","Укажите фамилию":"Enter your name","Нарисуйте подпись":"Draw your signature",
+"Слишком много попыток. Подождите и повторите.":"Too many attempts. Wait and try again.","Проверьте почту и подтвердите адрес, затем войдите.":"Check your email and confirm the address, then log in.","Письмо для сброса пароля отправлено.":"Password reset email sent.","Пароль изменён.":"Password changed.",
+"Удалить пользователя?":"Delete this user?","Пользователь удалён":"User deleted","Удалить":"Delete","Нельзя удалить самого себя":"You cannot delete yourself","Ошибка связи с базой: ":"Database connection error: "
+}};
+const TRP=[
+[/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
+[/^Журнал заполнен: записи вышли за (\d+) страниц\.$/,{uk:"Журнал заповнено: записи вийшли за $1 сторінок.",en:"Journal is full: entries exceed $1 pages."}],
+[/^Стр\. (\S+) из (\d+)$/,{uk:"Стор. $1 з $2",en:"Page $1 of $2"}],
+[/^стр\. (\d+), строка (\d+)$/,{uk:"стор. $1, рядок $2",en:"p. $1, row $2"}],
+[/^Текущая смена: №(.*) от (.*)$/,{uk:"Поточна зміна: №$1 від $2",en:"Current shift: #$1 of $2"}],
+[/^Почерк (\d+)$/,{uk:"Почерк $1",en:"Handwriting $1"}],
+[/^(.*) · смена №(.*)$/,{uk:"$1 · зміна №$2",en:"$1 · shift #$2"}],
+[/^Инв\. № (.*)$/,{uk:"Інв. № $1",en:"Inv. No. $1"}],
+[/^Страниц: (\d+)$/,{uk:"Сторінок: $1",en:"Pages: $1"}],
+[/^Ошибка: (.*)$/,{uk:"Помилка: $1",en:"Error: $1"}],
+[/^Помилка зв'язку з базою: (.*)$/,{uk:"Помилка зв'язку з базою: $1",en:"Database connection error: $1"}]
+];
+let LANG=localStorage.getItem("lang");if(!["uk","ru","en"].includes(LANG))LANG="uk";
+function tr(s){s=String(s);if(LANG==="ru")return s;const d=TRD[LANG][s];if(d)return d;for(const[r,m]of TRP)if(r.test(s))return s.replace(r,m[LANG]);return s}
+const skipN=n=>{const e=n.nodeType===1?n:n.parentElement;return !e||!!e.closest("#book,#meas,script,style,textarea,[data-ru]")};
+function doText(n){if(skipN(n))return;const v=n.nodeValue;let o;
+ if(n._v!==undefined&&n._v===v)o=n._o;else{const c=v.trim().replace(/\u00a0/g," ");if(!c)return;o=c;n._o=c}
+ const m=v.match(/^(\s*)[\s\S]*?(\s*)$/),nv=m[1]+tr(o)+m[2];n._v=nv;if(nv!==v)n.nodeValue=nv}
+function doAttr(e){if(e.closest("#book,#meas,script,style,[data-ru]"))return;["placeholder","title"].forEach(a=>{if(!e.hasAttribute(a))return;const v=e.getAttribute(a),k="_a"+a;let o;
+ if(e[k+"v"]!==undefined&&e[k+"v"]===v)o=e[k];else{o=v;e[k]=v}const t=tr(o);e[k+"v"]=t;if(t!==v)e.setAttribute(a,t)})}
+function walk(root){if(root.nodeType===3)return doText(root);if(root.nodeType!==1)return;
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);let n=root;
+ do{n.nodeType===3?doText(n):doAttr(n)}while(n=w.nextNode())}
+const mo=new MutationObserver(ms=>{ms.forEach(m=>{if(m.type==="characterData")doText(m.target);else if(m.type==="attributes")doAttr(m.target);else m.addedNodes.forEach(walk)});mo.takeRecords()});
+function applyLang(){document.documentElement.lang=LANG;document.title=tr("Оперативный журнал смены");walk(document.body);
+ document.querySelectorAll("#lang button").forEach(b=>b.classList.toggle("ghost",b.dataset.l!==LANG))}
+document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>{LANG=b.dataset.l;localStorage.setItem("lang",LANG);applyLang()});
+mo.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title"]});
+applyLang();
 
 </script></main></body></html>
