@@ -23,6 +23,17 @@ select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;bac
 #big{text-align:center;padding:14px}.bigt{font-size:clamp(22px,5vw,44px);font-weight:800;letter-spacing:1px}.bigt b{font-size:1.3em;color:var(--acc)}
 .sw{overflow-x:auto}.st{border-collapse:collapse;margin:12px 0;min-width:100%}.st th,.st td{border:1px solid #8886;padding:4px 8px}.st th.zone{text-align:left;background:#8882}.st .cur{background:#e0b46c55}.st input{width:100%;min-width:110px}
 .warn{color:#b3261e}
+body.wide main{max-width:none;padding:12px 8px}
+#roster .sw{overflow-x:auto}
+#roster table.rt{table-layout:fixed;width:100%;margin:8px 0}
+#roster .rt th,#roster .rt td{padding:0;border-width:1px;text-align:center;overflow:hidden;min-width:0}
+#roster .rt th.tn{width:86px;font-size:11px;text-align:left;padding:2px 4px;white-space:normal}
+#roster .rt th{font-size:10px;font-weight:600}
+#roster .rt th.wd{font-size:9px;font-weight:400}
+#roster .rt th.tm{height:46px;font-size:8px;font-weight:400}
+#roster .rt th.tm span{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block}
+#roster .rt input.cl{width:100%;min-width:0;padding:0;margin:0;border:0;background:transparent;font-size:11px;text-align:center;color:inherit}
+.dc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.dc.on{outline:2px solid var(--acc)}
 .st th,.st td{border:2px solid #8888}.st tr.zf>td{border-top:4px solid #888}.st td.zone{font-weight:700;text-align:center;vertical-align:middle;min-width:90px}
 .rt th,.rt td{padding:1px 2px;text-align:center;font-size:12px}.rt .cl{width:28px;min-width:0;padding:1px;text-align:center}
 .rt th.tm{height:48px}.rt th.tm span{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:400;font-size:10px}
@@ -46,8 +57,8 @@ table{width:100%;border-collapse:collapse}td{padding:4px;border-bottom:1px solid
 .ph{height:var(--rh);margin:12px 22px 0;display:grid;grid-template-columns:var(--c1) 1fr var(--c3);background:#eadcbc;border:1px solid #5c5240;font:600 10px/1.05 Georgia,serif;text-align:center}
 .ph div{padding:1px 3px;border-right:1px solid #5c5240;display:flex;align-items:center;justify-content:center}
 .ph div:last-child{border:0}
-.pb{position:relative;margin:0 22px;height:calc(36*var(--rh));background:repeating-linear-gradient(transparent 0 27px,#8da2b8 27px 28px)}
-.pb:before,.pb:after{content:"";position:absolute;top:0;bottom:0;border-left:1px solid #8da2b8;pointer-events:none}
+.pb{position:relative;margin:0 22px;height:calc(36*var(--rh));background:repeating-linear-gradient(transparent 0 26px,#6b8299 26px 28px)}
+.pb:before,.pb:after{content:"";position:absolute;top:0;bottom:0;border-left:2px solid #6b8299;pointer-events:none}
 .pb:before{left:var(--c1)}.pb:after{right:var(--c3)}
 .pn{position:absolute;bottom:20px;left:0;right:0;text-align:center;font:14px Georgia,serif;color:#5c5240}
 .row{display:grid;grid-template-columns:var(--c1) 1fr var(--c3);position:relative;z-index:1}
@@ -110,7 +121,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 </div>
 <div id="app" hidden>
  <div id="big" class="card"></div>
- <div class="g" id="tabs"><button id="tabJ" type="button">Журналы</button><button class="ghost" id="tabC" type="button">Состав смены</button><button class="ghost" id="tabS" type="button">График смен</button><span id="clk" class="clk" data-ru></span></div>
+ <div class="g" id="tabs"><button id="tabJ" type="button">Журналы</button><button class="ghost" id="tabC" type="button">Состав смены</button><button class="ghost" id="tabS" type="button">График смен</button><button class="ghost" id="tabD" type="button">Документы</button><span id="clk" class="clk" data-ru></span></div>
  <div id="lib">
   <div class="g" id="depts"></div>
   <div class="g"><button id="jnew" hidden>＋ Новый журнал</button></div>
@@ -118,9 +129,10 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  </div>
  <div id="sched" hidden></div>
  <div id="roster" hidden></div>
+ <div id="docs" hidden></div>
  <div id="jv" hidden>
  <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b></div>
- <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
+ <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="pdfb">⬇ PDF</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
  <div id="cur" class="card" style="margin:6px 0"></div>
  <div id="wrap"><div class="book" id="book"></div><div id="meas"></div></div>
  <div class="nav"><button id="prev">◀</button><span id="pinfo" class="hint"></span><button id="next">▶</button></div>
@@ -169,6 +181,9 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 </dialog>
 <dialog id="od" style="max-width:900px;width:96%"><b>Управление</b>
  <p class="hint">Подтверждение пользователей и их должности.</p><div id="users"></div>
+ <p><b>Год сайта</b> (фактическое время с другим годом)</p>
+ <div class="g"><input id="syr" class="n" type="number" min="1900" max="2200" placeholder="1986"><button id="ssv3">Сохранить год</button><button class="ghost" id="srs">Сбросить (реальный год)</button></div>
+ <p class="hint"><span>Сейчас на сайте:</span> <b id="sinfo"></b></p>
  <p><b>Подразделения (цеха)</b> (каждое с новой строки)</p>
  <textarea id="dl" rows="4" style="width:100%"></textarea>
  <div class="g"><button id="dsv">Сохранить подразделения</button></div>
@@ -233,9 +248,11 @@ const maxp=()=>+J.pages||100;
 const full=()=>used>maxp()&&(toast(`Журнал заполнен (${maxp()} стр.)`),true);
 const opts=n=>Array.from({length:n},(_,i)=>`<option>${pad(i)}</option>`).join("");
 ["th","eh"].forEach(i=>$(i).innerHTML=opts(24));["tmn","ts","em","es"].forEach(i=>$(i).innerHTML=opts(60));
-const setNow=()=>{const d=new Date();$("th").value=pad(d.getHours());$("tmn").value=pad(d.getMinutes());$("ts").value=pad(d.getSeconds())};
+const siteYear=()=>{try{const y=((RAW.settings||[]).find(x=>x.key==="site")||{value:{}}).value.year;return y?+y:null}catch(e){return null}};
+const siteNow=()=>{const d=new Date(),y=siteYear();if(y)d.setFullYear(y);return d};
+const setNow=()=>{const d=siteNow();$("th").value=pad(d.getHours());$("tmn").value=pad(d.getMinutes());$("ts").value=pad(d.getSeconds())};
 const getT=()=>`${$("th").value}:${$("tmn").value}:${$("ts").value}`;
-const nowS=()=>{const d=new Date();return`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const nowS=()=>{const d=siteNow();return`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
 $("now").onclick=setNow;setNow();
 const cv=$("sg"),cx=cv.getContext("2d");let drawing=false,drew=false;
 cx.lineWidth=3.5;cx.lineCap="round";cx.lineJoin="round";cx.strokeStyle="#1b2a9b";
@@ -267,7 +284,7 @@ function renderBar(){
  $("plist").innerHTML=P().map(x=>`<option value="${esc(x)}">`).join("");$("ulist").innerHTML=Object.keys(prof).map(i=>`<option value="${esc(prof[i].name)}">`).join("");
  if(!p){b.innerHTML="";return}
  b.innerHTML=`${av(p,28)} <span class="hint">${esc(p.name)}${roles[uid]?.position?" · "+esc(roles[uid].position):""}${p.team?" · "+esc(p.team):""}</span> <button class="ghost" id="pb2">👤 Профиль</button> `+(isOwner?`<button class="ghost" id="ob">⚙ Управление</button>`:"")+` <button class="ghost" id="lo">Выйти</button>`;$("lo").onclick=()=>sb.auth.signOut();$("pb2").onclick=openProfile;
- if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("tl").value=teams.join("\n");$("dl").value=(depts.length?depts:DEPT).join("\n");$("od").showModal();renderUsers()};
+ if(isOwner)$("ob").onclick=()=>{$("pl").value=positions.join("\n");$("tl").value=teams.join("\n");$("syr").value=siteYear()||"";$("sinfo").textContent=siteNow().toLocaleDateString(locOf());$("dl").value=(depts.length?depts:DEPT).join("\n");$("od").showModal();renderUsers()};
  $("ownh").hidden=!approved();$("jset").hidden=!isOwner;$("xb").hidden=!isOwner;$("jnew").hidden=!isOwner;
  if(!approved()){$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";$("msg").dataset.w="1"}
  else if($("msg").dataset.w){$("msg").textContent="";delete $("msg").dataset.w}
@@ -284,7 +301,7 @@ function schedInfo(){
  if(r.mode!=="auto")return{team:r.manualTeam||"",auto:false};
  const times=parseTimes(r.times);
  if(!times.length||!r.anchorTeam||!r.anchorAt)return{team:r.anchorTeam||"",auto:true};
- const now=Date.now(),at=(d,t)=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,t).getTime();
+ const now=siteNow().getTime(),at=(d,t)=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,t).getTime();
  let cnt=0,next=null;const day=new Date(r.anchorAt);day.setHours(0,0,0,0);
  for(let k=0;k<4000&&next===null;k++,day.setDate(day.getDate()+1))for(const t of times){const x=at(day,t);if(x>r.anchorAt){if(x<=now)cnt++;else if(next===null)next=x}}
  const i0=Math.max(0,teams.indexOf(r.anchorTeam));
@@ -301,8 +318,14 @@ $("big").onclick=e=>{if(!e.target.closest("#rbtn"))return;const i=schedInfo()||{
 $("rcl").onclick=()=>$("rd").close();
 $("rsv").onclick=()=>safe(async()=>{const team=$("rteam").value;if(!team)return toast("Укажите бригаду смены");
  const mode=document.querySelector("input[name=rmode]:checked").value;
- await db.doc("config/rule").set({mode,manualTeam:team,anchorTeam:team,anchorAt:Date.now(),times:$("rtimes").value.trim()});$("rd").close();toast("Смены сохранены")});
+ await db.doc("config/rule").set({mode,manualTeam:team,anchorTeam:team,anchorAt:siteNow().getTime(),times:$("rtimes").value.trim()});$("rd").close();toast("Смены сохранены")});
 let tab="j",sdraft=null;
+async function setYear(y){const t=(schedInfo()||{}).team;await db.doc("config/site").set({year:y});
+ rY=siteNow().getFullYear();rM=siteNow().getMonth();
+ if(shRule.mode==="auto"&&t)await db.doc("config/rule").set({...shRule,anchorTeam:t,anchorAt:siteNow().getTime()});
+ $("syr").value=y||"";$("sinfo").textContent=siteNow().toLocaleDateString(locOf());toast("Год сайта сохранён");all()}
+$("ssv3").onclick=()=>safe(async()=>{const y=+$("syr").value;if(!(y>=1900&&y<=2200))return toast("Укажите год от 1900 до 2200");await setYear(y)});
+$("srs").onclick=()=>safe(async()=>{await setYear(null)});
 function renderSched(){
  const ds=depts.length?depts:DEPT,cols=teams,cu=(schedInfo()||{}).team,edit=isOwner&&!!sdraft,rows=(edit?sdraft:shSched).rows||[];
  let h=`<div class="g">${isOwner?(edit?`<button id="ssv">Сохранить состав</button><button class="ghost" id="scn">Отмена</button>`:`<button id="sed">✎ Редактировать состав</button>`):""}</div>`;
@@ -322,21 +345,21 @@ $("sched").onclick=e=>{const b=e.target.closest("button");if(!b)return;
  else if(b.dataset.add){sdraft.rows.push({d:b.dataset.add,p:"",c:{}});renderSched()}
  else if(b.dataset.rm!==undefined){sdraft.rows.splice(+b.dataset.rm,1);renderSched()}};
 // ---- графік змін по місяцях ----
-let rY=new Date().getFullYear(),rM=new Date().getMonth(),rDraft=null,rSlots=null;
+let rY=siteNow().getFullYear(),rM=siteNow().getMonth(),rDraft=null,rSlots=null;
 const ymKey=()=>rY+"-"+pad(rM+1);
 const setOf=k=>{const r=(RAW.settings||[]).find(x=>x.key===k);return r&&r.value?r.value:{}};
 const rosterOf=()=>setOf("roster:"+ymKey()).cells||{};
 const slotList=()=>{const a=setOf("roster_slots").slots;return a&&a.length?a:["00:00–08:00","08:00–16:00","16:00–24:00"]};
 const locOf=()=>LANG==="ru"?"ru-RU":LANG==="uk"?"uk-UA":"en-GB";
 function renderRoster(){
- const days=new Date(rY,rM+1,0).getDate(),sl=edit0()&&rSlots?rSlots:slotList(),n=sl.length,cols=teams,edit=edit0(),cells=edit?rDraft:rosterOf(),loc=locOf(),now=new Date();
+ const days=new Date(rY,rM+1,0).getDate(),sl=edit0()&&rSlots?rSlots:slotList(),n=sl.length,cols=teams,edit=edit0(),cells=edit?rDraft:rosterOf(),loc=locOf(),now=siteNow();
  const isNow=now.getFullYear()===rY&&now.getMonth()===rM,cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
- let h=`<div class="g"><button id="rprev"${edit?" disabled":""}>◀</button><select id="rmon"${edit?" disabled":""}>${Array.from({length:12},(_,i)=>`<option value="${i}"${i===rM?" selected":""}>${esc(cap(new Date(2000,i,1).toLocaleDateString(loc,{month:"long"})))}</option>`).join("")}</select><input id="ryear" class="n" type="number" min="2000" max="2100" value="${rY}"${edit?" disabled":""}><button id="rnext"${edit?" disabled":""}>▶</button>`+
+ let h=`<div class="g"><button id="rprev"${edit?" disabled":""}>◀</button><select id="rmon"${edit?" disabled":""}>${Array.from({length:12},(_,i)=>`<option value="${i}"${i===rM?" selected":""}>${esc(cap(new Date(2000,i,1).toLocaleDateString(loc,{month:"long"})))}</option>`).join("")}</select><input id="ryear" class="n" type="number" min="1900" max="2200" value="${rY}"${edit?" disabled":""}><button id="rnext"${edit?" disabled":""}>▶</button>`+
   (isOwner?(edit?`<button id="rsave">Сохранить график</button><button class="ghost" id="rcan">Отмена</button>`:`<button id="redit">✎ Редактировать график</button>`):"")+`</div>`;
  if(edit)h+=`<div class="g"><span>Время смен:</span><input id="rslots" value="${esc(sl.join(", "))}" style="flex:1;min-width:260px"></div>`;
  if(!cols.length)h+=`<p class="hint">Сначала добавьте смены (бригады) в окне «Управление».</p>`;
  const D=Array.from({length:days},(_,i)=>i+1),wk=d=>{const w=new Date(rY,rM,d).getDay();return w===0||w===6},td=d=>isNow&&d===now.getDate();
- h+=`<div class="sw"><table class="st rt"><thead><tr><th rowspan="3" class="tn">Смена</th>${D.map(d=>`<th colspan="${n}" class="${td(d)?"today":""} ${wk(d)?"wk":""}">${d}</th>`).join("")}</tr>`+
+ h+=`<div class="sw"><table class="st rt" style="min-width:${86+days*n*9}px"><thead><tr><th rowspan="3" class="tn">Смена</th>${D.map(d=>`<th colspan="${n}" class="${td(d)?"today":""} ${wk(d)?"wk":""}">${d}</th>`).join("")}</tr>`+
   `<tr>${D.map(d=>`<th colspan="${n}" class="wd ${td(d)?"today":""} ${wk(d)?"wk":""}" data-ru>${esc(new Date(rY,rM,d).toLocaleDateString(loc,{weekday:"short"}))}</th>`).join("")}</tr>`+
   `<tr>${D.map(d=>sl.map((x,k)=>`<th class="tm ${td(d)?"today":""}" title="${esc(x)}" data-ru><span>${esc(x.replace(/:00/g,""))}</span></th>`).join("")).join("")}</tr></thead><tbody>`;
  cols.forEach(t=>{h+=`<tr><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
@@ -345,7 +368,7 @@ const edit0=()=>isOwner&&!!rDraft;
 $("roster").oninput=e=>{if(!rDraft)return;const k=e.target.dataset.k;if(!k)return;const v=e.target.value.trim();if(v)rDraft[k]=v;else delete rDraft[k]};
 $("roster").onchange=e=>{
  if(e.target.id==="rmon"){rM=+e.target.value;renderRoster()}
- else if(e.target.id==="ryear"){const y=+e.target.value;if(y>=2000&&y<=2100){rY=y;renderRoster()}}};
+ else if(e.target.id==="ryear"){const y=+e.target.value;if(y>=1900&&y<=2200){rY=y;renderRoster()}}};
 $("roster").onclick=e=>{const b=e.target.closest("button");if(!b)return;
  const mv=d=>{rM+=d;if(rM<0){rM=11;rY--}if(rM>11){rM=0;rY++}renderRoster()};
  if(b.id==="rprev")mv(-1);else if(b.id==="rnext")mv(1);
@@ -355,11 +378,34 @@ $("roster").onclick=e=>{const b=e.target.closest("button");if(!b)return;
   const sl=$("rslots").value.split(",").map(x=>x.trim()).filter(Boolean);if(!sl.length)return toast("Укажите время смен");
   if(sl.join("|")!==slotList().join("|"))await db.doc("config/roster_slots").set({slots:sl});
   await db.doc("config/roster:"+ymKey()).set({cells:rDraft});rDraft=null;rSlots=null;renderRoster();toast("График сохранён")})};
-function tickClock(){const d=new Date(),c=$("clk");if(!c)return;const loc=locOf();
+function tickClock(){const d=siteNow(),c=$("clk");if(!c)return;const loc=locOf();
  c.innerHTML=`<b>${d.toLocaleTimeString(loc,{hour12:false})}</b><div class="hint">${esc(d.toLocaleDateString(loc,{weekday:"long",day:"numeric",month:"long",year:"numeric"}))}</div>`}
 setInterval(tickClock,1000);
-$("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};
+$("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};$("tabD").onclick=()=>{tab="d";all()};
 setInterval(()=>{if(!$("app").hidden){renderBig();if(curJ)$("cur").innerHTML=banner(latest())}},30000);
+let docsList=null,docUrl=null,docId=null;
+async function loadDocs(){const{data,error}=await sb.from("documents").select("*").order("created_at",{ascending:false});
+ if(error){docsList=[];$("docs").innerHTML=`<p class="hint">${esc(error.message)}</p>`;return}docsList=data;renderDocs(true)}
+function renderDocs(ready){
+ if(!ready){$("docs").innerHTML=`<p class="hint">…</p>`;loadDocs();return}
+ let h=isOwner?`<div class="g card"><input id="dfile" type="file" accept="application/pdf"><input id="dtitle" placeholder="Название документа" style="flex:1;min-width:180px"><button id="dup">Загрузить PDF</button></div>`:"";
+ h+=docsList.length?docsList.map(d=>`<div class="card dc${d.id===docId?" on":""}"><b style="flex:1;min-width:160px">${esc(d.title)}</b><span class="hint">${(d.size/1048576).toFixed(1)} MB · ${esc(new Date(d.created_at).toLocaleDateString(locOf()))}</span><button data-o="${d.id}">Открыть</button>${isOwner?`<button class="ghost" data-x="${d.id}">🗑</button>`:""}</div>`).join(""):`<p class="hint">Документов пока нет.</p>`;
+ if(docUrl)h+=`<div id="dv"><div class="g"><a href="${docUrl}" download="document.pdf">Скачать</a><a href="${docUrl}" target="_blank" rel="noopener">Открыть в новой вкладке</a><button class="ghost" id="dcl">Закрыть документ</button></div><iframe src="${docUrl}" title="PDF" style="width:100%;height:82vh;border:0;background:#fff"></iframe></div>`;
+ $("docs").innerHTML=h}
+$("docs").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.id==="dcl"){if(docUrl)URL.revokeObjectURL(docUrl);docUrl=null;docId=null;renderDocs(true)}
+ else if(b.dataset.o)safe(async()=>{const d=docsList.find(x=>x.id===b.dataset.o);if(!d)return;
+  const r=await sb.storage.from("documents").download(d.path);fail(r.error);
+  if(docUrl)URL.revokeObjectURL(docUrl);docUrl=URL.createObjectURL(new Blob([r.data],{type:"application/pdf"}));docId=d.id;renderDocs(true);
+  const v=$("dv");if(v)v.scrollIntoView({behavior:"smooth"})})
+ else if(b.dataset.x)safe(async()=>{const d=docsList.find(x=>x.id===b.dataset.x);if(!d||!confirm(tr("Удалить документ?")+"\n"+d.title))return;
+  fail((await sb.storage.from("documents").remove([d.path])).error);fail((await sb.from("documents").delete().eq("id",d.id)).error);
+  if(docId===d.id){if(docUrl)URL.revokeObjectURL(docUrl);docUrl=null;docId=null}toast("Документ удалён");await loadDocs()})
+ else if(b.id==="dup")safe(async()=>{const f=$("dfile").files[0];if(!f)return toast("Выберите PDF-файл");
+  if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name))return toast("Только файлы PDF");if(f.size>20*1048576)return toast("Файл слишком большой (максимум 20 МБ)");
+  b.disabled=true;try{const path=crypto.randomUUID()+".pdf",title=$("dtitle").value.trim()||f.name.replace(/\.pdf$/i,"");
+   fail((await sb.storage.from("documents").upload(path,f,{contentType:"application/pdf"})).error);
+   fail((await sb.from("documents").insert({title,path,size:f.size})).error);toast("Документ загружен");await loadDocs()}finally{b.disabled=false}})};
 const hhmm=ms=>{const d=new Date(ms);return pad(d.getHours())+":"+pad(d.getMinutes())};
 function banner(l){
  if(!l)return `<span>Смена не открыта</span>`+schedLine(l);
@@ -409,7 +455,8 @@ function titlePage(){
  <div class="hw" style="top:840px;left:60px">начат: ${title.start?esc(title.start):"____________"}<br>окончен: ${esc(title.end||"")}</div>
  ${title.signBy&&o?.sig?`<img src="${sigSrc(o,0)}" alt="" style="position:absolute;right:70px;top:900px;height:90px">`:""}</div>`;
 }
-const PW=794,PH=1123;
+const PW=794,PH=1123;let PGX=null;
+const loadJs=u=>new Promise((ok,no)=>{if(document.querySelector(`script[src="${u}"]`))return ok();const e=document.createElement("script");e.src=u;e.onload=ok;e.onerror=()=>no(new Error("Не удалось загрузить библиотеку PDF"));document.head.appendChild(e)});
 function renderBook(){
  if(!curJ)return;
  $("jname").textContent=J.name||"";
@@ -441,6 +488,7 @@ function renderBook(){
   if(n>nPages||n<0)return `<div class="page ${side}"></div>`;
   return `<div class="page ${side}">${hd}<div class="pb" data-p="${n}">${pages[n-1].join("")}${pk&&pk.p===n?`<div class="pick" style="top:${pk.r*28}px"></div>`:""}</div><div class="pn">— ${n} —</div></div>`;
  };
+PGX=page;
  let info;
  if(closed){
   $("book").innerHTML=`<div class="cover" id="cv" style="${cbg(J.color)}"><h2>${esc(J.name||"Журнал")}</h2><div class="label">${title.inv?"Инв. № "+esc(title.inv)+"<br>":""}Страниц: ${maxp()}</div><div style="font-size:18px;opacity:.8">нажмите, чтобы открыть</div></div>`;
@@ -462,6 +510,21 @@ function renderBook(){
   const mine=uid===l.handBy;$("acc").hidden=mine;
   $("accm").textContent=mine?"Смена завершена. Ожидайте, пока следующая смена перечитает записи и примет её.":"Предыдущая смена завершена. Перечитайте её записи и нажмите «Подтвердить» — ваши Ф.И.О. и подпись проставятся автоматически.";}
 }
+$("pdfb").onclick=()=>safe(async()=>{
+ if(!PGX)return;const b=$("pdfb"),old=b.textContent;b.disabled=true;let box;
+ try{
+  await loadJs("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await loadJs("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+  const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"}),total=Math.max(1,used);
+  box=document.createElement("div");box.style.cssText=`position:fixed;left:-9999px;top:0;width:${PW}px;height:${PH}px;--W:${PW}px;--H:${PH}px;--c1:100px;--c3:150px;--fs:24px;--rh:28px`;document.body.appendChild(box);
+  for(let n=0;n<=total;n++){
+   b.textContent=`PDF ${n+1}/${total+1}…`;box.innerHTML=PGX(n,"S");
+   box.querySelectorAll(".pb").forEach(pb=>{pb.style.background="none";for(let i=0;i<36;i++){const l=document.createElement("i");l.style.cssText=`position:absolute;left:0;right:0;top:${i*28+26}px;height:2px;background:#6b8299;pointer-events:none`;pb.appendChild(l)}});
+   const el=box.firstElementChild;el.style.borderRadius="0";el.style.boxShadow="none";
+   await document.fonts.ready;await new Promise(r=>setTimeout(r,150));
+   const c=await html2canvas(el,{scale:1.5,backgroundColor:"#f6ecd6",useCORS:true,logging:false});
+   if(n)pdf.addPage();pdf.addImage(c.toDataURL("image/jpeg",.88),"JPEG",0,0,210,297)}
+  pdf.save((J.name||"journal").replace(/[^\p{L}\p{N}_-]+/gu,"_")+".pdf");
+ }finally{if(box)box.remove();b.disabled=false;b.textContent=old}});
 const isWide=()=>innerWidth>=900,leftOf=()=>pg%2?pg-1:pg;
 $("prev").onclick=()=>{if(closed)return;
  if(isWide()){const l=leftOf();if(l===0)closed=true;else pg=l-2===0?1:l-2}else{if(pg<=0)closed=true;else pg--}renderBook()};
@@ -553,7 +616,7 @@ function crewRow(pos="",name=""){
  const x=document.createElement("button");x.className="ghost";x.textContent="✕";x.onclick=()=>r.remove();r.append(x);
  $("crew").append(r);
 }
-function fillShift(s){$("d").value=s?s.d:pad(new Date().getDate());$("m").value=s?s.m:pad(new Date().getMonth()+1);$("y").value=s?s.y:"";
+function fillShift(s){const n0=siteNow();$("d").value=s?s.d:pad(n0.getDate());$("m").value=s?s.m:pad(n0.getMonth()+1);$("y").value=s?s.y:pad(n0.getFullYear()%100);
  $("num").value=s?s.num:"";$("fh").value=s&&s.fh!=null?+s.fh:8;$("fm").value=s&&s.fm?s.fm:"00";$("uh").value=s&&s.uh!=null?+s.uh:20;$("um").value=s&&s.um?s.um:"00";
  $("crew").innerHTML="";(s?s.crew:[]).forEach(c=>crewRow(c.pos,c.name));fillTeam(s)}
 function autoCrew(){const t=$("nteam").value;if(!t)return;$("crew").innerHTML="";
@@ -673,11 +736,12 @@ const all=()=>{
  J=jrs.find(x=>x.id===curJ)||{};title=J;
  shifts=allS.filter(x=>(x.j||"main")===curJ);entries=allE.filter(x=>(x.j||"main")===curJ);
  renderBar();curJ?renderBook():renderLib();renderUsers();
- $("lib").hidden=!!curJ||tab!=="j";$("sched").hidden=!!curJ||tab!=="c";$("roster").hidden=!!curJ||tab!=="s";$("big").hidden=!!curJ;$("tabs").hidden=!!curJ;
- $("tabJ").classList.toggle("ghost",tab!=="j");$("tabC").classList.toggle("ghost",tab!=="c");$("tabS").classList.toggle("ghost",tab!=="s");
+ $("lib").hidden=!!curJ||tab!=="j";$("sched").hidden=!!curJ||tab!=="c";$("roster").hidden=!!curJ||tab!=="s";$("docs").hidden=!!curJ||tab!=="d";document.body.classList.toggle("wide",tab==="s"&&!curJ);if(tab!=="d")$("docs").dataset.r="";$("big").hidden=!!curJ;$("tabs").hidden=!!curJ;
+ $("tabJ").classList.toggle("ghost",tab!=="j");$("tabC").classList.toggle("ghost",tab!=="c");$("tabS").classList.toggle("ghost",tab!=="s");$("tabD").classList.toggle("ghost",tab!=="d");
  renderBig();
  if(!curJ&&tab==="c"&&!(sdraft&&$("sched").contains(document.activeElement)))renderSched();
- if(!curJ&&tab==="s"&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster()};
+ if(!curJ&&tab==="s"&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster();
+ if(!curJ&&tab==="d"&&!$("docs").dataset.r){$("docs").dataset.r="1";renderDocs()}};
 // ===================== Supabase: шар зв'язку з базою =====================
 const SB_URL="https://oepqtzfhajkimgfspxeb.supabase.co",SB_KEY="sb_publishable_Lu5wT5MLx6Izns667XKtSg_2W44ErxY";
 const sb=supabase.createClient(SB_URL,SB_KEY);
@@ -731,7 +795,7 @@ async function cfgSet(id,list){
  return reload(t)}
 async function setSetting(k,v){fail((await sb.from("settings").upsert({key:k,value:v,updated_at:new Date().toISOString()})).error);return reload("settings")}
 async function put(c,id,o,isSet){
- if(c==="config")return(id==="rule"||id==="schedule"||id.indexOf("roster")===0)?setSetting(id,o):cfgSet(id,o.list||[]);
+ if(c==="config")return(id==="rule"||id==="schedule"||id==="site"||id.indexOf("roster")===0)?setSetting(id,o):cfgSet(id,o.list||[]);
  let t=c,row;
  if(c==="profiles"){row={};if("name"in o)row.full_name=o.name;if("sig"in o)row.signature=o.sig;if("sigs"in o&&o.sigs&&o.sigs.length){row.signatures=o.sigs;row.signature=o.sigs[0]}if("font"in o&&isOwner)row.font=o.font;if("avatar"in o)row.avatar=o.avatar;if("about"in o)row.about=o.about||null;if("discord"in o)row.discord=o.discord||null;if("exp"in o)row.experience=o.exp}
  else if(c==="roles"){t=c="profiles";row={position:o.position||null,approved:!!o.approved,team:o.team||null};if("dept"in o)row.dept_id=dId(o.dept)}
@@ -808,7 +872,7 @@ function showReset(){$("auth").hidden=false;$("reg").hidden=true;$("app").hidden
  db.doc("config/teams").onSnapshot(s=>{teams=s.data().list;all()});
  db.doc("config/rule").onSnapshot(s=>{shRule=s.data()||{};all()});
  db.doc("config/schedule").onSnapshot(s=>{const d=s.data()||{};shSched={rows:d.rows||[]};all()});
- live();all();
+ rY=siteNow().getFullYear();rM=siteNow().getMonth();live();all();
 })();
 
 // ===================== Мови інтерфейсу (uk / ru / en); записи журналу лишаються російською =====================
@@ -850,6 +914,7 @@ uk:{
 "По графику сейчас:":"За графіком зараз:","⚠ в журнале ещё не оформлена эта смена":"⚠ у журналі ще не оформлено цю зміну","Фактическая смена:":"Фактична зміна:",
 "ЦЕХ":"ЦЕХ","ДОЛЖНОСТЬ":"ПОСАДА","Смена":"Зміна","✎ Редактировать состав":"✎ Редагувати склад","Сохранить состав":"Зберегти склад","Состав сохранён":"Склад збережено","Время смен:":"Час змін:","Укажите время смен":"Вкажіть час змін",
 "Мои подписи":"Мої підписи","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Можна до трьох підписів: при підписанні один з них обирається випадково.",
+"Документы":"Документи","Загрузить PDF":"Завантажити PDF","Название документа":"Назва документа","Открыть":"Відкрити","Открыть в новой вкладке":"Відкрити в новій вкладці","Скачать":"Завантажити","Закрыть документ":"Закрити документ","Документов пока нет.":"Документів поки немає.","Выберите PDF-файл":"Оберіть PDF-файл","Документ загружен":"Документ завантажено","Документ удалён":"Документ видалено","Файл слишком большой (максимум 20 МБ)":"Файл завеликий (максимум 20 МБ)","Только файлы PDF":"Лише файли PDF","Удалить документ?":"Видалити документ?","⬇ PDF":"⬇ PDF","Год сайта":"Рік сайту","(фактическое время с другим годом)":"(фактичний час з іншим роком)","Сохранить год":"Зберегти рік","Сбросить (реальный год)":"Скинути (справжній рік)","Год сайта сохранён":"Рік сайту збережено","Укажите год от 1900 до 2200":"Вкажіть рік від 1900 до 2200","Сейчас на сайте:":"Зараз на сайті:","Не удалось загрузить библиотеку PDF":"Не вдалося завантажити бібліотеку PDF",
 "Ошибка связи с базой: ":"Помилка зв'язку з базою: "
 },
 en:{
@@ -889,6 +954,7 @@ en:{
 "По графику сейчас:":"By schedule now:","⚠ в журнале ещё не оформлена эта смена":"⚠ this shift has not been recorded in the journal yet","Фактическая смена:":"Actual shift:",
 "ЦЕХ":"SHOP","ДОЛЖНОСТЬ":"POSITION","Смена":"Shift","✎ Редактировать состав":"✎ Edit crew","Сохранить состав":"Save crew","Состав сохранён":"Crew saved","Время смен:":"Shift hours:","Укажите время смен":"Enter the shift hours",
 "Мои подписи":"My signatures","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Up to three signatures: one of them is picked at random when you sign.",
+"Документы":"Documents","Загрузить PDF":"Upload PDF","Название документа":"Document title","Открыть":"Open","Открыть в новой вкладке":"Open in a new tab","Скачать":"Download","Закрыть документ":"Close document","Документов пока нет.":"No documents yet.","Выберите PDF-файл":"Choose a PDF file","Документ загружен":"Document uploaded","Документ удалён":"Document deleted","Файл слишком большой (максимум 20 МБ)":"File is too large (20 MB max)","Только файлы PDF":"PDF files only","Удалить документ?":"Delete this document?","⬇ PDF":"⬇ PDF","Год сайта":"Site year","(фактическое время с другим годом)":"(real time with a different year)","Сохранить год":"Save year","Сбросить (реальный год)":"Reset (real year)","Год сайта сохранён":"Site year saved","Укажите год от 1900 до 2200":"Enter a year from 1900 to 2200","Сейчас на сайте:":"Now on the site:","Не удалось загрузить библиотеку PDF":"Could not load the PDF library",
 "Ошибка связи с базой: ":"Database connection error: "
 }};
 const TRP=[
