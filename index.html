@@ -20,6 +20,9 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--acc)}
 select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;background:#fffdf6;color:#222}
 #lang button{padding:3px 8px;font-size:12px}
 .chip2{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--acc);border-radius:14px}
+#big{text-align:center;padding:14px}.bigt{font-size:clamp(22px,5vw,44px);font-weight:800;letter-spacing:1px}.bigt b{font-size:1.3em;color:var(--acc)}
+.sw{overflow-x:auto}.st{border-collapse:collapse;margin:12px 0;min-width:100%}.st th,.st td{border:1px solid #8886;padding:4px 8px}.st th.zone{text-align:left;background:#8882}.st .cur{background:#e0b46c55}.st input{width:100%;min-width:110px}
+.warn{color:#b3261e}.jc .lb b{font-size:12px;letter-spacing:0}
 .card{background:var(--card);border-radius:8px;padding:12px;margin:10px 0}
 .hint{opacity:.75}
 canvas{background:#fffdf6;border:1px dashed #8a7d66;border-radius:6px;touch-action:none;width:100%;max-width:560px;height:auto;display:block}
@@ -101,11 +104,14 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div class="g"><button class="ghost" id="sgc">Очистить</button><button id="rok">Зарегистрироваться</button></div>
 </div>
 <div id="app" hidden>
+ <div id="big" class="card"></div>
+ <div class="g" id="tabs"><button id="tj" type="button">Журналы</button><button class="ghost" id="ts" type="button">График смен</button></div>
  <div id="lib">
   <div class="g" id="depts"></div>
   <div class="g"><button id="jnew" hidden>＋ Новый журнал</button></div>
   <div id="shelf" class="shelf"></div>
  </div>
+ <div id="sched" hidden></div>
  <div id="jv" hidden>
  <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b></div>
  <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
@@ -138,6 +144,13 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <b>Состав смены</b><div id="crew"></div>
  <div class="g"><button class="ghost" id="plus">＋ добавить (должность и Ф.И.О.)</button></div>
  <div class="g"><button id="mk">Создать</button><button class="ghost" id="nc">Отмена</button></div>
+</dialog>
+<dialog id="rd"><b>Текущая смена</b>
+ <div class="g"><label><input type="radio" name="rmode" value="manual"> вручную</label><label><input type="radio" name="rmode" value="auto"> автоматически по времени</label></div>
+ <div class="g">Текущая смена: <select id="rteam"></select></div>
+ <div class="g">Время смены: <input id="rtimes" placeholder="08:00, 20:00" style="flex:1;min-width:180px"></div>
+ <p class="hint">В автоматическом режиме смена переключается на следующую в списке в указанное время. Выбранная выше смена считается текущей с этого момента.</p>
+ <div class="g"><button id="rsv">Сохранить</button><button class="ghost" id="rcl">Закрыть</button></div>
 </dialog>
 <dialog id="pd"><b>Мой профиль</b>
  <div class="g"><span id="pav"></span><input type="file" id="pfile" accept="image/*" style="max-width:220px"><button class="ghost" id="pavc" type="button">Убрать аватар</button></div>
@@ -247,13 +260,59 @@ const av=(p,z=28)=>p&&p.avatar?`<img src="${p.avatar}" width="${z}" height="${z}
 function onShift(){const l=latest(),m=prof[uid]||{};return !!(l&&!l.closed&&l.team&&m.team===l.team&&m.deptId&&m.deptId===J.deptId)}
 const sameDept=()=>isOwner||!!((prof[uid]||{}).deptId&&prof[uid].deptId===J.deptId);
 const canNew=()=>isOwner||(approved()&&sameDept()&&!!(prof[uid]||{}).team);
+const parseTimes=t=>String(t||"08:00, 20:00").split(/[\s,;]+/).filter(x=>/^\d{1,2}:\d{2}$/.test(x)).map(x=>{const[h,m]=x.split(":").map(Number);return h*60+m}).sort((a,b)=>a-b);
+function schedInfo(){
+ if(!teams.length)return null;const r=shRule||{};
+ if(r.mode!=="auto")return{team:r.manualTeam||"",auto:false};
+ const times=parseTimes(r.times);
+ if(!times.length||!r.anchorTeam||!r.anchorAt)return{team:r.anchorTeam||"",auto:true};
+ const now=Date.now(),at=(d,t)=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,t).getTime();
+ let cnt=0,next=null;const day=new Date(r.anchorAt);day.setHours(0,0,0,0);
+ for(let k=0;k<4000&&next===null;k++,day.setDate(day.getDate()+1))for(const t of times){const x=at(day,t);if(x>r.anchorAt){if(x<=now)cnt++;else if(next===null)next=x}}
+ const i0=Math.max(0,teams.indexOf(r.anchorTeam));
+ return{team:teams[(i0+cnt)%teams.length],auto:true,next}}
+const factTeam=jid=>{const l=allS.filter(x=>(x.j||"main")===jid).sort((a,b)=>a.createdAt-b.createdAt).pop();return l?l.team:""};
+function schedLine(l){const si=schedInfo();if(!si||!si.team)return"";
+ return `<div class="hint"><span>По графику сейчас:</span> <b>${esc(si.team)}</b>${(!l||l.team!==si.team)?` <span class="warn">⚠ в журнале ещё не оформлена эта смена</span>`:""}</div>`}
+function renderBig(){
+ const i=schedInfo(),el=$("big"),btn=isOwner?` <button id="rbtn">⚙ Настроить смену</button>`:"";
+ el.innerHTML=(i&&i.team?`<div class="bigt"><span>ТЕКУЩАЯ СМЕНА №</span><b>${esc(i.team)}</b></div><div class="hint">${i.auto?"<span>автоматически по времени</span>":"<span>установлена вручную</span>"}${i.next?` · <span>следующая смена в</span> ${hm(i.next)}`:""}</div>`:`<div class="bigt"><span>ТЕКУЩАЯ СМЕНА №</span> <span>не установлена</span></div>`)+btn}
+$("big").onclick=e=>{if(!e.target.closest("#rbtn"))return;const i=schedInfo()||{};
+ $("rteam").innerHTML=teams.map(t=>`<option>${esc(t)}</option>`).join("");$("rteam").value=i.team||teams[0]||"";
+ document.querySelector(`input[name=rmode][value=${shRule.mode==="auto"?"auto":"manual"}]`).checked=true;$("rtimes").value=shRule.times||"08:00, 20:00";$("rd").showModal()};
+$("rcl").onclick=()=>$("rd").close();
+$("rsv").onclick=()=>safe(async()=>{const team=$("rteam").value;if(!team)return toast("Укажите бригаду смены");
+ const mode=document.querySelector("input[name=rmode]:checked").value;
+ await db.doc("config/rule").set({mode,manualTeam:team,anchorTeam:team,anchorAt:Date.now(),times:$("rtimes").value.trim()});$("rd").close();toast("Смены сохранены")});
+let tab="j",sdraft=null;
+function renderSched(){
+ const ds=depts.length?depts:DEPT,cols=teams,cur=(schedInfo()||{}).team,edit=isOwner&&!!sdraft,rows=(edit?sdraft:shSched).rows||[];
+ let h=`<div class="g">${isOwner?(edit?`<button id="ssv">Сохранить график</button><button class="ghost" id="scn">Отмена</button>`:`<button id="sed">✎ Редактировать график</button>`):""}</div>`;
+ if(!cols.length)h+=`<p class="hint">Сначала добавьте смены (бригады) в окне «Управление».</p>`;
+ h+=`<div class="sw">`;
+ ds.forEach(d=>{const rs=rows.map((r,i)=>({r,i})).filter(x=>x.r.d===d);
+  h+=`<table class="st"><thead><tr><th class="zone">${esc(d)}</th>${cols.map(t=>`<th class="${t===cur?"cur":""}"><span>Смена №</span>${esc(t)}</th>`).join("")}${edit?"<th></th>":""}</tr></thead><tbody>`;
+  rs.forEach(({r,i})=>{h+=`<tr><td>${edit?`<input list="plist" data-i="${i}" data-k="p" value="${esc(r.p)}">`:esc(r.p)}</td>${cols.map(t=>`<td class="${t===cur?"cur":""}">${edit?`<input data-i="${i}" data-t="${esc(t)}" value="${esc((r.c||{})[t]||"")}">`:esc((r.c||{})[t]||"")}</td>`).join("")}${edit?`<td><button class="ghost" data-rm="${i}">✕</button></td>`:""}</tr>`});
+  if(edit)h+=`<tr><td colspan="${cols.length+2}"><button class="ghost" data-add="${esc(d)}">＋ должность</button></td></tr>`;
+  h+=`</tbody></table>`});
+ $("sched").innerHTML=h+`</div>`}
+$("sched").oninput=e=>{if(!sdraft)return;const i=+e.target.dataset.i;if(isNaN(i)||!sdraft.rows[i])return;
+ if(e.target.dataset.k==="p")sdraft.rows[i].p=e.target.value;else if(e.target.dataset.t){(sdraft.rows[i].c=sdraft.rows[i].c||{})[e.target.dataset.t]=e.target.value}};
+$("sched").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.id==="sed"){sdraft={rows:JSON.parse(JSON.stringify(shSched.rows||[]))};renderSched()}
+ else if(b.id==="scn"){sdraft=null;renderSched()}
+ else if(b.id==="ssv")safe(async()=>{await db.doc("config/schedule").set({rows:sdraft.rows});sdraft=null;renderSched();toast("График сохранён")});
+ else if(b.dataset.add){sdraft.rows.push({d:b.dataset.add,p:"",c:{}});renderSched()}
+ else if(b.dataset.rm!==undefined){sdraft.rows.splice(+b.dataset.rm,1);renderSched()}};
+$("tj").onclick=()=>{tab="j";all()};$("ts").onclick=()=>{tab="s";all()};
+setInterval(()=>{if(!$("app").hidden){renderBig();if(curJ)$("cur").innerHTML=banner(latest())}},30000);
 function banner(l){
- if(!l)return `<span>Смена не открыта</span>`;
+ if(!l)return `<span>Смена не открыта</span>`+schedLine(l);
  const st=!l.closed?"открыта":l.accBy?"принята":"ожидает приёма";
  let h=`<b>Текущая смена:</b> <b style="color:var(--acc)">${esc(l.team||"—")}</b> · <span>Смена №${esc(l.num)} от ${esc(fmt(l))}</span> · <span>${st}</span>`;
  if(!l.closed){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&prof[i].team&&prof[i].team===l.team&&prof[i].deptId&&prof[i].deptId===J.deptId);
   h+=`<div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>никого</span>"}</div>`}
- return h}
+ return h+schedLine(l)}
 const canWrite=()=>isOwner||(approved()&&onShift());
 const canEdit=by=>isOwner||(by===uid&&canWrite());
 const canMine=by=>isOwner||(!!by&&by===uid&&approved());
@@ -543,7 +602,7 @@ function renderLib(){
  const ds=depts.length?depts:DEPT;
  $("depts").innerHTML=["*",...ds].map(d=>`<button class="chip ${d===dept?"on":"ghost"}" data-d="${esc(d)}">${d==="*"?"Все":esc(d)}</button>`).join("");
  const l=jrs.filter(j=>dept==="*"||j.dept===dept).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
- $("shelf").innerHTML=l.length?l.map(j=>`<div class="jc" data-j="${j.id}" style="${cbg(j.color)}">${isOwner?'<button class="gear">⚙</button>':""}<b>${esc(j.name||"Журнал")}</b><div class="lb">Инв. № ${esc(j.inv||"—")}<br>Страниц: ${+j.pages||100}</div></div>`).join(""):`<p class="hint">В этом подразделении пока нет журналов.</p>`;
+ $("shelf").innerHTML=l.length?l.map(j=>`<div class="jc" data-j="${j.id}" style="${cbg(j.color)}">${isOwner?'<button class="gear">⚙</button>':""}<b>${esc(j.name||"Журнал")}</b><div class="lb">Инв. № ${esc(j.inv||"—")}<br>Страниц: ${+j.pages||100}<br><span>Фактическая смена:</span> <b>${esc(factTeam(j.id)||"—")}</b></div></div>`).join(""):`<p class="hint">В этом подразделении пока нет журналов.</p>`;
 }
 $("depts").onclick=e=>{const b=e.target.closest("[data-d]");if(b){dept=b.dataset.d;renderLib()}};
 $("shelf").onclick=e=>{const c=e.target.closest(".jc");if(!c)return;if(e.target.closest(".gear"))return openJ(c.dataset.j);curJ=c.dataset.j;closed=true;pg=1;pickAt=null;all()};
@@ -553,11 +612,14 @@ const all=()=>{
  if(curJ&&!jrs.find(x=>x.id===curJ))curJ=null;
  J=jrs.find(x=>x.id===curJ)||{};title=J;
  shifts=allS.filter(x=>(x.j||"main")===curJ);entries=allE.filter(x=>(x.j||"main")===curJ);
- renderBar();curJ?renderBook():renderLib();renderUsers()};
+ renderBar();curJ?renderBook():renderLib();renderUsers();
+ $("lib").hidden=!!curJ||tab!=="j";$("sched").hidden=!!curJ||tab!=="s";$("big").hidden=!!curJ;$("tabs").hidden=!!curJ;
+ $("tj").classList.toggle("ghost",tab!=="j");$("ts").classList.toggle("ghost",tab!=="s");
+ renderBig();if(!curJ&&tab==="s"&&!(sdraft&&$("sched").contains(document.activeElement)))renderSched()};
 // ===================== Supabase: шар зв'язку з базою =====================
 const SB_URL="https://oepqtzfhajkimgfspxeb.supabase.co",SB_KEY="sb_publishable_Lu5wT5MLx6Izns667XKtSg_2W44ErxY";
 const sb=supabase.createClient(SB_URL,SB_KEY);
-let teams=[];const RAW={},SUBS={},ORD={profiles:"created_at",departments:"sort",positions:"sort",teams:"sort",journals:"created_at",shifts:"created_at",entries:"created_at"};
+let teams=[],shRule={},shSched={rows:[]};const RAW={},SUBS={},ORD={profiles:"created_at",departments:"sort",positions:"sort",teams:"sort",settings:"key",journals:"created_at",shifts:"created_at",entries:"created_at"};
 const isU=s=>/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(s||""),tsn=x=>x?Date.parse(x):0;
 const dName=id=>((RAW.departments||[]).find(d=>d.id===id)||{}).name,dId=n=>((RAW.departments||[]).find(d=>d.name===n)||{}).id||null;
 const g_=o=>o||{};
@@ -571,15 +633,16 @@ const MAP={
  entries:r=>({j:r.journal_id,shift:r.shift_id,uid:r.author,type:"note",time:r.time,text:r.body,vz:r.visa||"",ink:r.ink,ts:tsn(r.created_at),at:r.at_row,sgBy:r.sig_by||undefined,sgS:g_(r.sig).s,sgX:g_(r.sig).x,sgY:g_(r.sig).y,nosg:g_(r.sig).nosg})
 };
 const SRC={profiles:"profiles",roles:"profiles",journals:"journals",shifts:"shifts",entries:"entries"};
-const AFFECT={profiles:["profiles","roles"],departments:["config/depts","journals"],positions:["config/positions"],teams:["config/teams"],journals:["journals"],shifts:["shifts"],entries:["entries"]};
+const AFFECT={profiles:["profiles","roles"],departments:["config/depts","journals"],positions:["config/positions"],teams:["config/teams"],settings:["config/rule","config/schedule"],journals:["journals"],shifts:["shifts"],entries:["entries"]};
 function emit(k,only){(only?[only]:SUBS[k]||[]).forEach(cb=>{try{
  if(k==="config/depts")cb({exists:true,data:()=>({list:(RAW.departments||[]).map(d=>d.name)})});
  else if(k==="config/positions")cb({exists:true,data:()=>({list:(RAW.positions||[]).map(p=>p.name)})});
+ else if(k==="config/rule"||k==="config/schedule"){const r=(RAW.settings||[]).find(x=>x.key===k.slice(7));cb({exists:!!r,data:()=>r?r.value:{}})}
  else if(k==="config/teams")cb({exists:true,data:()=>({list:(RAW.teams||[]).map(p=>p.name)})});
  else cb({docs:(RAW[SRC[k]]||[]).map(r=>({id:r.id,data:()=>MAP[k](r)}))})}catch(e){console.error(e)}})}
 async function fetchAll(t){let out=[],i=0;for(;;){let q=sb.from(t).select("*").order(ORD[t]).range(i,i+999);if(t==="entries")q=q.is("deleted_at",null);
  const{data,error}=await q;if(error)throw error;out=out.concat(data);if(data.length<1000)break;i+=1000}return out}
-const loadAll=()=>Promise.all(Object.keys(ORD).map(t=>fetchAll(t).then(r=>RAW[t]=r)));
+const loadAll=()=>Promise.all(Object.keys(ORD).map(t=>fetchAll(t).then(r=>RAW[t]=r).catch(e=>{if(t==="settings"||t==="teams"){RAW[t]=[];return}throw e})));
 async function reload(t){RAW[t]=await fetchAll(t);AFFECT[t].forEach(k=>emit(k))}
 const fail=e=>{if(e)throw new Error(e.message||e.code)};
 const ROW={
@@ -604,8 +667,9 @@ async function cfgSet(id,list){
  for(const p of cur)if(!list.includes(p.name))fail((await sb.from(t).delete().eq("name",p.name)).error);
  for(let i=0;i<list.length;i++)fail((await sb.from(t).upsert({name:list[i],sort:i+1})).error);
  return reload(t)}
+async function setSetting(k,v){fail((await sb.from("settings").upsert({key:k,value:v,updated_at:new Date().toISOString()})).error);return reload("settings")}
 async function put(c,id,o,isSet){
- if(c==="config")return cfgSet(id,o.list||[]);
+ if(c==="config")return(id==="rule"||id==="schedule")?setSetting(id,o):cfgSet(id,o.list||[]);
  let t=c,row;
  if(c==="profiles"){row={};if("name"in o)row.full_name=o.name;if("sig"in o)row.signature=o.sig;if("font"in o&&isOwner)row.font=o.font;if("avatar"in o)row.avatar=o.avatar;if("about"in o)row.about=o.about||null;if("discord"in o)row.discord=o.discord||null;if("exp"in o)row.experience=o.exp}
  else if(c==="roles"){t=c="profiles";row={position:o.position||null,approved:!!o.approved,team:o.team||null};if("dept"in o)row.dept_id=dId(o.dept)}
@@ -680,6 +744,8 @@ function showReset(){$("auth").hidden=false;$("reg").hidden=true;$("app").hidden
  db.doc("config/depts").onSnapshot(s=>{depts=s.data().list;all()});
  db.doc("config/positions").onSnapshot(s=>{positions=s.data().list;all()});
  db.doc("config/teams").onSnapshot(s=>{teams=s.data().list;all()});
+ db.doc("config/rule").onSnapshot(s=>{shRule=s.data()||{};all()});
+ db.doc("config/schedule").onSnapshot(s=>{const d=s.data()||{};shSched={rows:d.rows||[]};all()});
  live();all();
 })();
 
@@ -716,6 +782,10 @@ uk:{
 "Профиль сохранён":"Профіль збережено","Бригада смены:":"Бригада зміни:","Смены (бригады)":"Зміни (бригади)","(например: 1 (А); каждая с новой строки)":"(наприклад: 1 (А); кожна з нового рядка)","Сохранить смены":"Зберегти зміни","Смены сохранены":"Зміни збережено","Укажите бригаду смены":"Вкажіть бригаду зміни",
 "Текущая смена:":"Поточна зміна:","Право записи имеют:":"Право запису мають:","никого":"ніхто","Смена не открыта":"Зміну не відкрито","открыта":"відкрита","принята":"прийнята","ожидает приёма":"очікує прийому",
 "Владелец ещё не назначил вам смену (бригаду): писать нельзя.":"Власник ще не призначив вам зміну (бригаду): писати не можна.","Вы можете писать только в журналах своего цеха.":"Ви можете писати лише в журналах свого цеху.",
+"ТЕКУЩАЯ СМЕНА №":"ПОТОЧНА ЗМІНА №","автоматически по времени":"автоматично за часом","установлена вручную":"встановлено вручну","следующая смена в":"наступна зміна о","не установлена":"не встановлено","⚙ Настроить смену":"⚙ Налаштувати зміну",
+"Журналы":"Журнали","График смен":"Графік змін","✎ Редактировать график":"✎ Редагувати графік","Сохранить график":"Зберегти графік","График сохранён":"Графік збережено","＋ должность":"＋ посада","Сначала добавьте смены (бригады) в окне «Управление».":"Спершу додайте зміни (бригади) у вікні «Керування».",
+"Текущая смена":"Поточна зміна","вручную":"вручну","Время смены:":"Час зміни:","В автоматическом режиме смена переключается на следующую в списке в указанное время. Выбранная выше смена считается текущей с этого момента.":"В автоматичному режимі зміна перемикається на наступну зі списку у вказаний час. Обрана вище зміна вважається поточною з цього моменту.",
+"По графику сейчас:":"За графіком зараз:","⚠ в журнале ещё не оформлена эта смена":"⚠ у журналі ще не оформлено цю зміну","Фактическая смена:":"Фактична зміна:",
 "Ошибка связи с базой: ":"Помилка зв'язку з базою: "
 },
 en:{
@@ -749,6 +819,10 @@ en:{
 "Профиль сохранён":"Profile saved","Бригада смены:":"Shift team:","Смены (бригады)":"Shifts (teams)","(например: 1 (А); каждая с новой строки)":"(e.g. 1 (A); one per line)","Сохранить смены":"Save shifts","Смены сохранены":"Shifts saved","Укажите бригаду смены":"Select the shift team",
 "Текущая смена:":"Current shift:","Право записи имеют:":"Can write:","никого":"nobody","Смена не открыта":"No shift is open","открыта":"open","принята":"accepted","ожидает приёма":"waiting for acceptance",
 "Владелец ещё не назначил вам смену (бригаду): писать нельзя.":"The owner has not assigned you a shift (team) yet: you cannot write.","Вы можете писать только в журналах своего цеха.":"You can only write in your own shop's journals.",
+"ТЕКУЩАЯ СМЕНА №":"CURRENT SHIFT #","автоматически по времени":"automatic by time","установлена вручную":"set manually","следующая смена в":"next shift at","не установлена":"not set","⚙ Настроить смену":"⚙ Configure shift",
+"Журналы":"Journals","График смен":"Shift schedule","✎ Редактировать график":"✎ Edit schedule","Сохранить график":"Save schedule","График сохранён":"Schedule saved","＋ должность":"＋ position","Сначала добавьте смены (бригады) в окне «Управление».":"First add shifts (teams) in the “Management” window.",
+"Текущая смена":"Current shift","вручную":"manually","Время смены:":"Shift times:","В автоматическом режиме смена переключается на следующую в списке в указанное время. Выбранная выше смена считается текущей с этого момента.":"In automatic mode the shift switches to the next one in the list at the given times. The shift selected above is considered current from now on.",
+"По графику сейчас:":"By schedule now:","⚠ в журнале ещё не оформлена эта смена":"⚠ this shift has not been recorded in the journal yet","Фактическая смена:":"Actual shift:",
 "Ошибка связи с базой: ":"Database connection error: "
 }};
 const TRP=[
