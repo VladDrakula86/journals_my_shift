@@ -92,7 +92,7 @@ button.chip.on{background:var(--acc);color:#fff}
 .nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:8px 0}
 label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=range]{flex:1}
 </style></head><body><main>
-<div class="bar"><h1>📓 Оперативный журнал смены</h1><div id="lang" class="g" data-ru><button data-l="uk" class="ghost" type="button">UA</button><button data-l="ru" class="ghost" type="button">RU</button><button data-l="en" class="ghost" type="button">EN</button></div><div id="bar"></div></div>
+<div class="bar"><h1>📓 Оперативный журнал смены</h1><div id="lang" class="g" data-ru><button data-l="uk" class="ghost" type="button">UA</button><button data-l="ru" class="ghost" type="button">RU</button><button data-l="en" class="ghost" type="button">EN</button></div><span id="yrb" class="hint" data-ru style="font-weight:700"></span><div id="bar"></div></div>
 <div id="msg" class="hint"></div>
 <div id="auth" class="card" hidden style="max-width:460px;margin:30px auto">
  <div class="g"><button id="tlog" type="button">Вход</button><button class="ghost" id="treg" type="button">Регистрация</button></div>
@@ -131,7 +131,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div id="roster" hidden></div>
  <div id="docs" hidden></div>
  <div id="jv" hidden>
- <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b></div>
+ <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b><span id="clk2" class="hint" data-ru style="margin-left:auto"></span></div>
  <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="pdfb">⬇ PDF</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
  <div id="cur" class="card" style="margin:6px 0"></div>
  <div id="wrap"><div class="book" id="book"></div><div id="meas"></div></div>
@@ -358,12 +358,21 @@ function renderRoster(){
   (isOwner?(edit?`<button id="rsave">Сохранить график</button><button class="ghost" id="rcan">Отмена</button>`:`<button id="redit">✎ Редактировать график</button>`):"")+`</div>`;
  if(edit)h+=`<div class="g"><span>Время смен:</span><input id="rslots" value="${esc(sl.join(", "))}" style="flex:1;min-width:260px"></div>`;
  if(!cols.length)h+=`<p class="hint">Сначала добавьте смены (бригады) в окне «Управление».</p>`;
- const D=Array.from({length:days},(_,i)=>i+1),wk=d=>{const w=new Date(rY,rM,d).getDay();return w===0||w===6},td=d=>isNow&&d===now.getDate();
- h+=`<div class="sw"><table class="st rt" style="min-width:${86+days*n*9}px"><thead><tr><th rowspan="3" class="tn">Смена</th>${D.map(d=>`<th colspan="${n}" class="${td(d)?"today":""} ${wk(d)?"wk":""}">${d}</th>`).join("")}</tr>`+
-  `<tr>${D.map(d=>`<th colspan="${n}" class="wd ${td(d)?"today":""} ${wk(d)?"wk":""}" data-ru>${esc(new Date(rY,rM,d).toLocaleDateString(loc,{weekday:"short"}))}</th>`).join("")}</tr>`+
-  `<tr>${D.map(d=>sl.map((x,k)=>`<th class="tm ${td(d)?"today":""}" title="${esc(x)}" data-ru><span>${esc(x.replace(/:00/g,""))}</span></th>`).join("")).join("")}</tr></thead><tbody>`;
- cols.forEach(t=>{h+=`<tr><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
- $("roster").innerHTML=h+`</tbody></table></div>`}
+ const wk=d=>{const w=new Date(rY,rM,d).getDay();return w===0||w===6},td=d=>isNow&&d===now.getDate();
+ // сколько частей нужно, чтобы весь месяц поместился в ширину окна без прокрутки
+ const avail=Math.max(280,$("roster").clientWidth||innerWidth-16),lab=86,cw=11;
+ let parts=1;while(parts<8&&lab+Math.ceil(days/parts)*n*cw>avail)parts++;
+ const per=Math.ceil(days/parts);
+ for(let pi=0;pi<parts;pi++){
+  const from=pi*per+1,to=Math.min(days,(pi+1)*per);if(from>days)break;
+  const D=Array.from({length:to-from+1},(_,i)=>from+i);
+  h+=`<div class="sw"><table class="st rt" style="min-width:${lab+D.length*n*9}px"><thead><tr><th rowspan="3" class="tn">Смена</th>${D.map(d=>`<th colspan="${n}" class="${td(d)?"today":""} ${wk(d)?"wk":""}">${d}</th>`).join("")}</tr>`+
+   `<tr>${D.map(d=>`<th colspan="${n}" class="wd ${td(d)?"today":""} ${wk(d)?"wk":""}" data-ru>${esc(new Date(rY,rM,d).toLocaleDateString(loc,{weekday:"short"}))}</th>`).join("")}</tr>`+
+   `<tr>${D.map(d=>sl.map((x,k)=>`<th class="tm ${td(d)?"today":""}" title="${esc(x)}" data-ru><span>${esc(x.replace(/:00/g,""))}</span></th>`).join("")).join("")}</tr></thead><tbody>`;
+  cols.forEach(t=>{h+=`<tr><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
+  h+=`</tbody></table></div>`}
+ $("roster").innerHTML=h}
+let rzT=null;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!$("roster").hidden&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster()},200)});
 const edit0=()=>isOwner&&!!rDraft;
 $("roster").oninput=e=>{if(!rDraft)return;const k=e.target.dataset.k;if(!k)return;const v=e.target.value.trim();if(v)rDraft[k]=v;else delete rDraft[k]};
 $("roster").onchange=e=>{
@@ -378,8 +387,10 @@ $("roster").onclick=e=>{const b=e.target.closest("button");if(!b)return;
   const sl=$("rslots").value.split(",").map(x=>x.trim()).filter(Boolean);if(!sl.length)return toast("Укажите время смен");
   if(sl.join("|")!==slotList().join("|"))await db.doc("config/roster_slots").set({slots:sl});
   await db.doc("config/roster:"+ymKey()).set({cells:rDraft});rDraft=null;rSlots=null;renderRoster();toast("График сохранён")})};
-function tickClock(){const d=siteNow(),c=$("clk");if(!c)return;const loc=locOf();
- c.innerHTML=`<b>${d.toLocaleTimeString(loc,{hour12:false})}</b><div class="hint">${esc(d.toLocaleDateString(loc,{weekday:"long",day:"numeric",month:"long",year:"numeric"}))}</div>`}
+function tickClock(){const d=siteNow(),loc=locOf(),t=d.toLocaleTimeString(loc,{hour12:false}),c=$("clk");
+ if(c)c.innerHTML=`<b>${t}</b><div class="hint">${esc(d.toLocaleDateString(loc,{weekday:"long",day:"numeric",month:"long",year:"numeric"}))}</div>`;
+ const c2=$("clk2");if(c2)c2.textContent=`🕒 ${t} · ${d.toLocaleDateString(loc)}`;
+ const y=$("yrb"),sy=siteYear();if(y)y.textContent=sy?`📅 ${sy}`:""}
 setInterval(tickClock,1000);
 $("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};$("tabD").onclick=()=>{tab="d";all()};
 setInterval(()=>{if(!$("app").hidden){renderBig();if(curJ)$("cur").innerHTML=banner(latest())}},30000);
@@ -389,7 +400,7 @@ async function loadDocs(){const{data,error}=await sb.from("documents").select("*
 function renderDocs(ready){
  if(!ready){$("docs").innerHTML=`<p class="hint">…</p>`;loadDocs();return}
  let h=isOwner?`<div class="g card"><input id="dfile" type="file" accept="application/pdf"><input id="dtitle" placeholder="Название документа" style="flex:1;min-width:180px"><button id="dup">Загрузить PDF</button></div>`:"";
- h+=docsList.length?docsList.map(d=>`<div class="card dc${d.id===docId?" on":""}"><b style="flex:1;min-width:160px">${esc(d.title)}</b><span class="hint">${(d.size/1048576).toFixed(1)} MB · ${esc(new Date(d.created_at).toLocaleDateString(locOf()))}</span><button data-o="${d.id}">Открыть</button>${isOwner?`<button class="ghost" data-x="${d.id}">🗑</button>`:""}</div>`).join(""):`<p class="hint">Документов пока нет.</p>`;
+ h+=docsList.length?docsList.map(d=>`<div class="card dc${d.id===docId?" on":""}"><b style="flex:1;min-width:160px">${esc(d.title)}</b><span class="hint">${(d.size/1048576).toFixed(1)} MB · ${esc((()=>{const q=new Date(d.created_at),y=siteYear();if(y)q.setFullYear(y);return q.toLocaleDateString(locOf())})())}</span><button data-o="${d.id}">Открыть</button>${isOwner?`<button class="ghost" data-x="${d.id}">🗑</button>`:""}</div>`).join(""):`<p class="hint">Документов пока нет.</p>`;
  if(docUrl)h+=`<div id="dv"><div class="g"><a href="${docUrl}" download="document.pdf">Скачать</a><a href="${docUrl}" target="_blank" rel="noopener">Открыть в новой вкладке</a><button class="ghost" id="dcl">Закрыть документ</button></div><iframe src="${docUrl}" title="PDF" style="width:100%;height:82vh;border:0;background:#fff"></iframe></div>`;
  $("docs").innerHTML=h}
 $("docs").onclick=e=>{const b=e.target.closest("button");if(!b)return;
