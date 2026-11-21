@@ -23,6 +23,7 @@ select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;bac
 #big{text-align:center;padding:14px}.bigt{font-size:clamp(22px,5vw,44px);font-weight:800;letter-spacing:1px}.bigt b{font-size:1.3em;color:var(--acc)}
 .sw{overflow-x:auto}.st{border-collapse:collapse;margin:12px 0;min-width:100%}.st th,.st td{border:1px solid #8886;padding:4px 8px}.st th.zone{text-align:left;background:#8882}.st .cur{background:#e0b46c55}.st input{width:100%;min-width:110px}
 .warn{color:#b3261e}
+.chk{display:inline-flex;gap:4px;align-items:center;margin-right:10px}
 body.wide main{max-width:none;padding:12px 8px}
 #roster .sw{overflow-x:auto}
 #roster table.rt{table-layout:fixed;width:100%;margin:8px 0}
@@ -209,6 +210,8 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div class="g"><input id="tst" placeholder="начат: дд.мм.гг" style="flex:1"><input id="ten" placeholder="окончен: дд.мм.гг" style="flex:1"></div>
  <div class="g">Цвет обложки: <span id="jcs"></span> <input type="color" id="jcol"></div>
  <div class="g">Подпись на титульном листе от: <select id="jsb"></select></div>
+ <div class="hint" style="margin-top:6px"><b>Кто может читать журнал</b> (пусто — все подтверждённые)</div><div class="g" id="jrp"></div>
+ <div class="hint"><b>Кто может редактировать (только на своей смене)</b> (пусто — любая должность)</div><div class="g" id="jep"></div>
  <div class="g"><button id="jsv">Сохранить</button><button class="ghost" id="jdel">Удалить журнал</button><button class="ghost" id="jcl">Закрыть</button></div>
 </dialog>
 <dialog id="xd"><b>Удаление записей</b>
@@ -292,9 +295,11 @@ function renderBar(){
 }
 const nm=x=>String(x||"").toLowerCase().replace(/[\s.,]/g,"");
 const av=(p,z=28)=>p&&p.avatar?`<img src="${p.avatar}" width="${z}" height="${z}" style="border-radius:50%;object-fit:cover;vertical-align:middle" alt="">`:`<span style="display:inline-block;width:${z}px;height:${z}px;border-radius:50%;background:#8a7d66;color:#fff;text-align:center;line-height:${z}px;font-size:${Math.round(z*.5)}px;vertical-align:middle">${esc(((p&&p.name)||"?")[0]||"?")}</span>`;
-function onShift(){const l=latest(),m=prof[uid]||{};return !!(l&&!l.closed&&l.team&&m.team===l.team&&m.deptId&&m.deptId===J.deptId)}
+const myPos=()=>((roles[uid]||{}).position||"");
+const okEdit=()=>isOwner||!(J.editPos&&J.editPos.length)||J.editPos.includes(myPos());
+function onShift(){const l=latest(),m=prof[uid]||{};return !!(l&&!l.closed&&l.team&&m.team===l.team&&m.deptId&&m.deptId===J.deptId&&okEdit())}
 const sameDept=()=>isOwner||!!((prof[uid]||{}).deptId&&prof[uid].deptId===J.deptId);
-const canNew=()=>isOwner||(approved()&&sameDept()&&!!(prof[uid]||{}).team);
+const canNew=()=>isOwner||(approved()&&sameDept()&&okEdit()&&!!(prof[uid]||{}).team);
 const parseTimes=t=>String(t||"08:00, 20:00").split(/[\s,;]+/).filter(x=>/^\d{1,2}:\d{2}$/.test(x)).map(x=>{const[h,m]=x.split(":").map(Number);return h*60+m}).sort((a,b)=>a-b);
 function schedInfo(){
  if(!teams.length)return null;const r=shRule||{};
@@ -422,7 +427,7 @@ function banner(l){
  if(!l)return `<span>Смена не открыта</span>`+schedLine(l);
  const st=!l.closed?"открыта":l.accBy?"принята":"ожидает приёма";
  let h=`<b>Текущая смена:</b> <b style="color:var(--acc)">${esc(l.team||"—")}</b> · <span>Смена №${esc(l.num)} от ${esc(fmt(l))}</span> · <span>${st}</span>`;
- if(!l.closed){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&prof[i].team&&prof[i].team===l.team&&prof[i].deptId&&prof[i].deptId===J.deptId);
+ if(!l.closed){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&prof[i].team&&prof[i].team===l.team&&prof[i].deptId&&prof[i].deptId===J.deptId&&(!(J.editPos&&J.editPos.length)||J.editPos.includes(roles[i]?.position)));
   h+=`<div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>никого</span>"}</div>`}
  return h+schedLine(l)}
 const canWrite=()=>isOwner||(approved()&&onShift());
@@ -511,10 +516,10 @@ PGX=page;
  $("pinfo").textContent=info;
  const l=latest(),ap=approved(),cw=canWrite();
  $("composer").hidden=!(l&&cw&&!l.closed);
- const m0=prof[uid]||{};
- $("vo").hidden=!(ap&&!cw&&!(l&&l.closed&&!l.accBy));
- $("vo").textContent=!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
- $("accp").hidden=!(l&&ap&&sameDept()&&l.closed&&!l.accBy);
+ const m0=prof[uid]||{},canAcc=!!(l&&ap&&sameDept()&&okEdit()&&(isOwner||(m0.team&&m0.team!==l.team))&&l.closed&&!l.accBy);
+ $("vo").hidden=!(ap&&!cw&&!canAcc);
+ $("vo").textContent=!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":!okEdit()?"Ваша должность не имеет права редактировать этот журнал.":(l&&l.closed&&l.team===m0.team)?"Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
+ $("accp").hidden=!canAcc;
  $("cur").innerHTML=banner(l);
  if(l){const nms=l.crew.map(c=>c.name),key=nms.join("|");if($("rsp").dataset.k!==key){$("rsp").innerHTML=nms.map(n=>`<option>${esc(n)}</option>`).join("");$("rsp").dataset.k=key}}
  if(l){$("cinfo").textContent=`Текущая смена: №${l.num} от ${fmt(l)}`;
@@ -696,8 +701,10 @@ function openJ(id){if(!isOwner)return;jEd=id;const j=id?jrs.find(x=>x.id===id):n
  $("jdp").innerHTML=ds.map(d=>`<option>${esc(d)}</option>`).join("");
  $("jn").value=j?j.name||"":"ОПЕРАТИВНЫЙ ЖУРНАЛ";$("jdp").value=j?.dept||(dept!=="*"?dept:ds[0]);$("jpg").value=j?.pages||100;
  $("tinv").value=j?.inv||"";$("tunit").value=j?.unit||"";$("tst").value=j?.start||"";$("ten").value=j?.end||"";$("jcol").value=j?.color||COLORS[0];
- $("jdel").hidden=!j;$("jsb").innerHTML=`<option value="">— без подписи —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("jsb").value=j?.signBy||"";$("jd").showModal()}
-const jData=()=>({name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value});
+ $("jdel").hidden=!j;$("jsb").innerHTML=`<option value="">— без подписи —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("jsb").value=j?.signBy||"";posBox("jrp",j&&j.readPos);posBox("jep",j&&j.editPos);$("jd").showModal()}
+const posBox=(id,sel)=>{$(id).innerHTML=P().map(x=>`<label class="chk"><input type="checkbox" value="${esc(x)}"${(sel||[]).includes(x)?" checked":""}> ${esc(x)}</label>`).join("")||`<span class="hint">Сначала добавьте должности в «Управлении».</span>`};
+const pickPos=id=>[...$(id).querySelectorAll("input:checked")].map(i=>i.value);
+const jData=()=>({readPos:pickPos("jrp"),editPos:pickPos("jep"),name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value});
 $("jsv").onclick=()=>safe(async()=>{if(jEd)await db.doc("journals/"+jEd).update(jData());
  else await db.doc("journals/"+(jrs.length?"j"+Date.now():"main")).set({...jData(),createdAt:Date.now(),by:uid});$("jd").close()});
 let jdf;$("jdel").onclick=()=>safe(async()=>{
@@ -763,7 +770,7 @@ const g_=o=>o||{};
 const MAP={
  profiles:r=>({name:r.full_name,sig:r.signature,sigs:(r.signatures&&r.signatures.length)?r.signatures:(r.signature?[r.signature]:[]),createdAt:tsn(r.created_at),font:r.font,avatar:r.avatar,about:r.about||"",exp:r.experience,discord:r.discord||"",team:r.team||"",deptId:r.dept_id,dept:dName(r.dept_id)||""}),
  roles:r=>({position:r.position||"",approved:!!r.approved||r.role==="owner"}),
- journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",createdAt:tsn(r.created_at),by:r.created_by}),
+ journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",readPos:r.read_pos||[],editPos:r.edit_pos||[],createdAt:tsn(r.created_at),by:r.created_by}),
  shifts:r=>({team:r.team,j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
   handBy:r.hand_by,handName:r.hand_name,handLabel:r.hand_label,handInk:r.hand_ink,handSgV:g_(r.hand_sg).v,handSgS:g_(r.hand_sg).s,handSgX:g_(r.hand_sg).x,handSgY:g_(r.hand_sg).y,handNoSg:g_(r.hand_sg).nosg,
   accBy:r.acc_by,accName:r.acc_name,accLabel:r.acc_label,accInk:r.acc_ink,accTime:r.acc_at,accSgV:g_(r.acc_sg).v,accSgS:g_(r.acc_sg).s,accSgX:g_(r.acc_sg).x,accSgY:g_(r.acc_sg).y,accNoSg:g_(r.acc_sg).nosg}),
@@ -784,7 +791,7 @@ async function reload(t){RAW[t]=await fetchAll(t);AFFECT[t].forEach(k=>emit(k))}
 const fail=e=>{if(e)throw new Error(e.message||e.code)};
 const ROW={
  journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended"};
-  for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;return r},
+  for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;if("readPos"in o)r.read_pos=o.readPos||[];if("editPos"in o)r.edit_pos=o.editPos||[];return r},
  shifts:(o,cur)=>{const r={},m={team:"team",d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("fh"in o)r.fh=+o.fh;if("uh"in o)r.uh=+o.uh;if("accTime"in o)r.acc_at=new Date().toISOString();
   ["hand","acc"].forEach(p=>{const ks={s:p+"SgS",x:p+"SgX",y:p+"SgY",nosg:p+"NoSg",v:p+"SgV"};
@@ -926,6 +933,7 @@ uk:{
 "ЦЕХ":"ЦЕХ","ДОЛЖНОСТЬ":"ПОСАДА","Смена":"Зміна","✎ Редактировать состав":"✎ Редагувати склад","Сохранить состав":"Зберегти склад","Состав сохранён":"Склад збережено","Время смен:":"Час змін:","Укажите время смен":"Вкажіть час змін",
 "Мои подписи":"Мої підписи","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Можна до трьох підписів: при підписанні один з них обирається випадково.",
 "Документы":"Документи","Загрузить PDF":"Завантажити PDF","Название документа":"Назва документа","Открыть":"Відкрити","Открыть в новой вкладке":"Відкрити в новій вкладці","Скачать":"Завантажити","Закрыть документ":"Закрити документ","Документов пока нет.":"Документів поки немає.","Выберите PDF-файл":"Оберіть PDF-файл","Документ загружен":"Документ завантажено","Документ удалён":"Документ видалено","Файл слишком большой (максимум 20 МБ)":"Файл завеликий (максимум 20 МБ)","Только файлы PDF":"Лише файли PDF","Удалить документ?":"Видалити документ?","⬇ PDF":"⬇ PDF","Год сайта":"Рік сайту","(фактическое время с другим годом)":"(фактичний час з іншим роком)","Сохранить год":"Зберегти рік","Сбросить (реальный год)":"Скинути (справжній рік)","Год сайта сохранён":"Рік сайту збережено","Укажите год от 1900 до 2200":"Вкажіть рік від 1900 до 2200","Сейчас на сайте:":"Зараз на сайті:","Не удалось загрузить библиотеку PDF":"Не вдалося завантажити бібліотеку PDF",
+"Кто может читать журнал":"Хто може читати журнал","(пусто — все подтверждённые)":"(порожньо — усі підтверджені)","Кто может редактировать (только на своей смене)":"Хто може редагувати (лише на своїй зміні)","(пусто — любая должность)":"(порожньо — будь-яка посада)","Сначала добавьте должности в «Управлении».":"Спершу додайте посади в «Керуванні».","Ваша должность не имеет права редактировать этот журнал.":"Ваша посада не має права редагувати цей журнал.","Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":"Зміну здано: ви можете лише переглядати журнал, доки до вашої бригади не дійде зміна.",
 "Ошибка связи с базой: ":"Помилка зв'язку з базою: "
 },
 en:{
@@ -966,6 +974,7 @@ en:{
 "ЦЕХ":"SHOP","ДОЛЖНОСТЬ":"POSITION","Смена":"Shift","✎ Редактировать состав":"✎ Edit crew","Сохранить состав":"Save crew","Состав сохранён":"Crew saved","Время смен:":"Shift hours:","Укажите время смен":"Enter the shift hours",
 "Мои подписи":"My signatures","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Up to three signatures: one of them is picked at random when you sign.",
 "Документы":"Documents","Загрузить PDF":"Upload PDF","Название документа":"Document title","Открыть":"Open","Открыть в новой вкладке":"Open in a new tab","Скачать":"Download","Закрыть документ":"Close document","Документов пока нет.":"No documents yet.","Выберите PDF-файл":"Choose a PDF file","Документ загружен":"Document uploaded","Документ удалён":"Document deleted","Файл слишком большой (максимум 20 МБ)":"File is too large (20 MB max)","Только файлы PDF":"PDF files only","Удалить документ?":"Delete this document?","⬇ PDF":"⬇ PDF","Год сайта":"Site year","(фактическое время с другим годом)":"(real time with a different year)","Сохранить год":"Save year","Сбросить (реальный год)":"Reset (real year)","Год сайта сохранён":"Site year saved","Укажите год от 1900 до 2200":"Enter a year from 1900 to 2200","Сейчас на сайте:":"Now on the site:","Не удалось загрузить библиотеку PDF":"Could not load the PDF library",
+"Кто может читать журнал":"Who can read the journal","(пусто — все подтверждённые)":"(empty — all approved users)","Кто может редактировать (только на своей смене)":"Who can edit (only on their own shift)","(пусто — любая должность)":"(empty — any position)","Сначала добавьте должности в «Управлении».":"First add positions in “Management”.","Ваша должность не имеет права редактировать этот журнал.":"Your position is not allowed to edit this journal.","Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":"The shift has been handed over: you can only view the journal until your team's shift comes.",
 "Ошибка связи с базой: ":"Database connection error: "
 }};
 const TRP=[
