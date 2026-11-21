@@ -106,6 +106,19 @@ sub,sup{font-size:.62em;line-height:0}
 button.chip.on{background:var(--acc);color:#fff}
 .nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:8px 0}
 label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=range]{flex:1}
+#roster .rt th.tn{width:110px;font-size:12px}
+#roster .rt th.tm{height:60px;font-size:11px;font-weight:700}
+#roster .rt th.tm span{font-size:11px;letter-spacing:.2px}
+#roster .rt th.tm.hz{height:auto;padding:5px 0}
+#roster .rt th.tm.hz span{writing-mode:horizontal-tb;transform:none}
+#roster .rt th.today{background:#f2c14e;color:#111}
+#roster .rt td.today{background:#e0b46c40}
+#roster .rt th.nowc{background:#ff8a00;color:#000;box-shadow:inset 0 -3px 0 #fff}
+#roster .rt td.nowc{background:#ff8a0055}
+#roster .rt tr.cur th.tn{background:#ffd23f;color:#000;box-shadow:inset 5px 0 0 #ff6a00;font-weight:800}
+#roster .rt tr.cur td{background:#ffd23f26}
+#roster .rt tr.cur td.nowc{background:#ff8a00;color:#000;font-weight:800;box-shadow:inset 0 0 0 2px #fff}
+.kfl{display:flex;gap:8px;align-items:center;margin:4px 0;flex-wrap:wrap}.kfl span{min-width:210px;font-size:13px;opacity:.9}.kfl input{flex:1;min-width:200px}
 </style></head><body><aside id="pres" hidden><div class="pt">Актив сайта</div>
  <div class="pc"><span class="dot on"></span> <span>Сейчас на сайте:</span> <b id="pcnt">0</b></div>
  <div id="plist2"></div>
@@ -158,6 +171,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
   <div class="g">Ручка: <span id="inks"></span> &nbsp; Время:
    <select id="th"></select>:<select id="tmn"></select>:<select id="ts"></select> <button class="ghost" id="now">сейчас</button></div>
   <div class="g">Место записи: <b id="pickt">продолжение после предыдущей записи</b> <button class="ghost" id="pickc" hidden>сбросить</button></div>
+  <div id="kf"></div>
   <textarea id="tx" rows="3" style="width:100%" placeholder="Текст записи… (Enter — новая строка, пробелы сохраняются)"></textarea>
   <div class="g"><button class="ghost fmt" data-t="tx" data-k="_">xₙ нижний индекс</button><button class="ghost fmt" data-t="tx" data-k="^">xⁿ верхний индекс</button><span class="hint">пример: ^{235}_{92}U</span></div>
   <div class="g"><button class="ghost" id="vzb">+ Виза / замечание</button></div>
@@ -221,6 +235,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div class="g"><button id="esv">Сохранить</button><button class="ghost" id="edel">Удалить запись</button><button class="ghost" id="ecl">Отмена</button></div>
 </dialog>
 <dialog id="jd"><b id="jdt">Журнал</b>
+ <div class="g">Тип журнала: <select id="jkind" style="flex:1"></select></div>
  <div class="g"><input id="jn" placeholder="Название журнала" style="flex:1"></div>
  <div class="g"><select id="jdp"></select> страниц: <input id="jpg" type="number" min="1" max="500" class="n"></div>
  <div class="g"><input id="tinv" placeholder="Инв. № …" style="flex:1"><input id="tunit" placeholder="Подразделение (надпись на титуле)" style="flex:1"></div>
@@ -386,22 +401,26 @@ function renderRoster(){
  if(edit)h+=`<div class="g"><span>Время смен:</span><input id="rslots" value="${esc(sl.join(", "))}" style="flex:1;min-width:260px"></div>`;
  if(!cols.length)h+=`<p class="hint">Сначала добавьте смены (бригады) в окне «Управление».</p>`;
  const wk=d=>{const w=new Date(rY,rM,d).getDay();return w===0||w===6},td=d=>isNow&&d===now.getDate();
+ const curT=(schedInfo()||{}).team,mn=now.getHours()*60+now.getMinutes();
+ const cs=sl.findIndex(x=>{const m=String(x).match(/(\d{1,2})(?::(\d{2}))?\s*[–—-]\s*(\d{1,2})(?::(\d{2}))?/);if(!m)return false;const a=+m[1]*60+(+m[2]||0),b=+m[3]*60+(+m[4]||0);return a<b?(mn>=a&&mn<b):(mn>=a||mn<b)});
+ const nc=(d,k)=>td(d)&&k===cs?" nowc":"";
  // сколько частей нужно, чтобы весь месяц поместился в ширину окна без прокрутки
- const avail=Math.min(900,Math.max(280,$("roster").clientWidth||innerWidth-16)),lab=86;
+ const avail=Math.max(280,$("roster").clientWidth||innerWidth-16),lab=110;
  let parts=rParts;while(parts<8&&Math.floor((avail-lab)/(Math.ceil(days/parts)*n))<14)parts++;
- const per=Math.ceil(days/parts),cw=Math.max(11,Math.min(24,Math.floor((avail-lab)/(per*n))));
+ const per=Math.ceil(days/parts),cw=Math.max(11,Math.min(60,(avail-lab)/(per*n)));
  for(let pi=0;pi<parts;pi++){
   const from=pi*per+1,to=Math.min(days,(pi+1)*per);if(from>days)break;
   const D=Array.from({length:to-from+1},(_,i)=>from+i);
   h+=`<div class="sw"><table class="st rt" style="width:${lab+D.length*n*cw}px;min-width:0"><thead><tr><th rowspan="3" class="tn">Смена</th>${D.map(d=>`<th colspan="${n}" class="${td(d)?"today":""} ${wk(d)?"wk":""}">${d}</th>`).join("")}</tr>`+
    `<tr>${D.map(d=>`<th colspan="${n}" class="wd ${td(d)?"today":""} ${wk(d)?"wk":""}" data-ru>${esc(new Date(rY,rM,d).toLocaleDateString(loc,{weekday:"short"}))}</th>`).join("")}</tr>`+
-   `<tr>${D.map(d=>sl.map((x,k)=>`<th class="tm ${td(d)?"today":""}" title="${esc(x)}" data-ru><span>${esc(x.replace(/:00/g,""))}</span></th>`).join("")).join("")}</tr></thead><tbody>`;
-  cols.forEach(t=>{h+=`<tr><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
+   `<tr>${D.map(d=>sl.map((x,k)=>`<th class="tm ${td(d)?"today":""}${nc(d,k)}${cw>=38?" hz":""}" title="${esc(x)}" data-ru><span>${esc(x.replace(/:00/g,""))}</span></th>`).join("")).join("")}</tr></thead><tbody>`;
+  cols.forEach(t=>{h+=`<tr class="${t===curT?"cur":""}"><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}${nc(d,k)}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
   h+=`</tbody></table></div>`}
  $("roster").innerHTML=h}
 $("roster").addEventListener("click",e=>{const b=e.target.closest("#rp2,#rp3");if(!b)return;rParts=b.id==="rp2"?2:3;try{localStorage.setItem("rParts",rParts)}catch(x){}renderRoster()});
 let rzT=null;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!$("roster").hidden&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster()},200)});
 const edit0=()=>isOwner&&!!rDraft;
+setInterval(()=>{if(!$("app").hidden&&!$("roster").hidden&&!rDraft)renderRoster()},60000);
 $("roster").oninput=e=>{if(!rDraft)return;const k=e.target.dataset.k;if(!k)return;const v=e.target.value.trim();if(v)rDraft[k]=v;else delete rDraft[k]};
 $("roster").onchange=e=>{
  if(e.target.id==="rmon"){rM=+e.target.value;renderRoster()}
@@ -428,7 +447,7 @@ async function loadDocs(){const{data,error}=await sb.from("documents").select("*
  if(error){docsList=[];$("docs").innerHTML=`<p class="hint">${esc(error.message)}</p>`;return}docsList=data;renderDocs(true)}
 function renderDocs(ready){
  if(!ready){$("docs").innerHTML=`<p class="hint">…</p>`;loadDocs();return}
- let h=isOwner?`<div class="g card"><input id="dfile" type="file" accept="application/pdf"><input id="dtitle" placeholder="Название документа" style="flex:1;min-width:180px"><button id="dup">Загрузить PDF</button></div>`:"";
+ let h=canUp()?`<div class="g card"><input id="dfile" type="file" accept="application/pdf"><input id="dtitle" placeholder="Название документа" style="flex:1;min-width:180px"><button id="dup">Загрузить PDF</button></div>`:"";
  h+=docsList.length?docsList.map(d=>`<div class="card dc${d.id===docId?" on":""}"><b style="flex:1;min-width:160px">${esc(d.title)}</b><span class="hint">${(d.size/1048576).toFixed(1)} MB · ${esc((()=>{const q=new Date(d.created_at),y=siteYear();if(y)q.setFullYear(y);return q.toLocaleDateString(locOf())})())}</span><button data-o="${d.id}">Открыть</button>${isOwner?`<button class="ghost" data-x="${d.id}">🗑</button>`:""}</div>`).join(""):`<p class="hint">Документов пока нет.</p>`;
  if(docUrl)h+=`<div id="dv"><div class="g"><a href="${docUrl}" download="document.pdf">Скачать</a><a href="${docUrl}" target="_blank" rel="noopener">Открыть в новой вкладке</a><button class="ghost" id="dcl">Закрыть документ</button></div><iframe src="${docUrl}" title="PDF" style="width:100%;height:82vh;border:0;background:#fff"></iframe></div>`;
  $("docs").innerHTML=h}
@@ -454,6 +473,7 @@ function banner(l){
  if(!l.closed){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&prof[i].team&&prof[i].team===l.team&&prof[i].deptId&&prof[i].deptId===J.deptId&&(!(J.editPos&&J.editPos.length)||J.editPos.includes(roles[i]?.position)));
   h+=`<div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>никого</span>"}</div>`}
  return h+schedLine(l)}
+const canUp=()=>isOwner||/(^|[^а-яёіїєґa-z])гис([^а-яёіїєґa-z]|$)|генеральн\S*\s+директор/i.test((roles[uid]||{}).position||"");
 const canWrite=()=>isOwner||(approved()&&onShift());
 const canEdit=by=>isOwner||(by===uid&&canWrite());
 const canMine=by=>isOwner||(!!by&&by===uid&&approved());
@@ -522,7 +542,7 @@ function renderBook(){
  nPages=pages.length;m.innerHTML="";
  if(used>maxp())$("msg").textContent=`Журнал заполнен: записи вышли за ${maxp()} страниц.`;
  if(pg>nPages)pg=nPages;if(pg<(isWide()?1:0))pg=isWide()?1:0;
- const hd=`<div class="ph"><div>Дата и время записи</div><div>Содержание записей в течение смены, о сдаче и приёмке смены</div><div>Визы, замечания и распоряжения</div></div>`;
+ const kh=(KINDS[J.kind]||KINDS.oper).h,hd=`<div class="ph"><div>${kh[0]}</div><div>${kh[1]}</div><div>${kh[2]}</div></div>`;
  const page=(n,side)=>{
   if(n===0)return `<div class="page ${side}">${titlePage()}</div>`;
   if(n>nPages||n<0)return `<div class="page ${side}"></div>`;
@@ -545,6 +565,8 @@ PGX=page;
  $("vo").textContent=!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":!okEdit()?"Ваша должность не имеет права редактировать этот журнал.":(l&&l.closed&&l.team===m0.team)?"Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
  $("accp").hidden=!canAcc;
  $("cur").innerHTML=banner(l);
+ {const kk=KINDS[J.kind]?J.kind:"oper",kkey=curJ+"|"+kk;if($("kf").dataset.k!==kkey){$("kf").dataset.k=kkey;const f=KINDS[kk].f||[];
+  $("kf").innerHTML=f.length?f.map((x,i)=>`<label class="kfl"><span>${esc(x)}</span><input class="kfi" data-i="${i}"></label>`).join("")+`<div class="hint"><span>Дополнительно (необязательно):</span></div>`:""}}
  if(l){const nms=l.crew.map(c=>c.name),key=nms.join("|");if($("rsp").dataset.k!==key){$("rsp").innerHTML=nms.map(n=>`<option>${esc(n)}</option>`).join("");$("rsp").dataset.k=key}}
  if(l){$("cinfo").textContent=`Текущая смена: №${l.num} от ${fmt(l)}`;
   const mine=uid===l.handBy;$("acc").hidden=mine;
@@ -578,9 +600,10 @@ $("vzb").onclick=()=>{$("vzbox").hidden=false;$("vzb").hidden=true;$("vz").focus
 $("vzc").onclick=()=>{$("vz").value="";$("vzbox").hidden=true;$("vzb").hidden=false};
 const eid=()=>"e"+Date.now()+Math.random().toString(36).slice(2,6);
 $("add").onclick=()=>safe(async()=>{
- const text=$("tx").value.replace(/\s+$/,""),s=latest();if(!text.trim()||!s||full())return;
+ const kf=(KINDS[J.kind]||KINDS.oper).f||[],lines=[...$("kf").querySelectorAll(".kfi")].map((i,k)=>i.value.trim()?`${kf[k]}: ${i.value.trim()}`:"").filter(Boolean);
+ const text=[...lines,$("tx").value.replace(/\s+$/,"")].filter(x=>x&&x.trim()).join("\n"),s=latest();if(!text.trim()||!s||full())return;
  await db.doc("entries/"+eid()).set({j:curJ,shift:s.id,uid,type:"note",time:getT(),text,vz:$("vz").value.trim(),ink,ts:Date.now(),sgV:rndSig(uid),...(pickAt!=null?{at:pickAt}:{})});
- pickAt=null;$("tx").value="";$("vzc").click();setNow();goLast();});
+ pickAt=null;$("tx").value="";$("kf").querySelectorAll(".kfi").forEach(i=>i.value="");$("vzc").click();setNow();goLast();});
 $("acc").onclick=()=>safe(async()=>{const l=latest();if(!l||!l.closed||l.accBy)return;
  await db.doc("shifts/"+l.id).update({accBy:uid,accSgV:rndSig(uid),accTime:nowS(),accInk:ink});goLast();});
 let cf;$("close").onclick=()=>safe(async()=>{const l=latest();if(!l||l.closed)return;
@@ -742,15 +765,33 @@ $("ps").onclick=()=>safe(async()=>{await db.doc("config/positions").set({list:$(
 let jEd=null;
 $("jcs").innerHTML=COLORS.map(c=>`<span class="ink" data-c="${c}" style="background:${c}"></span>`).join(" ");
 $("jcs").onclick=e=>{if(e.target.dataset.c)$("jcol").value=e.target.dataset.c};
+const KINDS={
+ oper:{n:"Оперативный журнал",t:"ОПЕРАТИВНЫЙ ЖУРНАЛ",h:["Дата и время записи", "Содержание записей в течение смены, о сдаче и приёмке смены", "Визы, замечания и распоряжения"],f:[]},
+ switch:{n:"Журнал оперативных переключений",t:"ЖУРНАЛ ОПЕРАТИВНЫХ ПЕРЕКЛЮЧЕНИЙ",h:["Дата и время", "Объект, операция, № распоряжения (бланка переключений)", "Визы, замечания и распоряжения"],f:["Объект / присоединение", "Операция (включено, отключено, …)", "№ распоряжения / бланка переключений", "Распоряжение дал / принял"]},
+ defect:{n:"Журнал дефектов и неисправностей оборудования",t:"ЖУРНАЛ ДЕФЕКТОВ И НЕИСПРАВНОСТЕЙ ОБОРУДОВАНИЯ",h:["Дата и время обнаружения", "Оборудование, описание дефекта, принятые меры", "Визы, сроки устранения"],f:["Оборудование / позиция", "Описание дефекта", "Принятые меры, срок устранения"]},
+ permit:{n:"Журнал нарядов-допусков и распоряжений",t:"ЖУРНАЛ НАРЯДОВ-ДОПУСКОВ И РАСПОРЯЖЕНИЙ",h:["Дата и время", "Наряд (распоряжение): №, работы, ответственные, срок", "Визы, замечания"],f:["№ наряда (распоряжения)", "Место и содержание работ", "Ответственный руководитель / допускающий", "Срок действия"]},
+ dosi:{n:"Журнал дозиметрического контроля",t:"ЖУРНАЛ ДОЗИМЕТРИЧЕСКОГО КОНТРОЛЯ",h:["Дата и время измерения", "Место, результаты измерений, прибор", "Визы, замечания"],f:["Место измерения", "Мощность дозы", "Загрязнённость поверхностей", "Прибор (тип, №)"]},
+ instr:{n:"Журнал инструктажей по охране труда",t:"ЖУРНАЛ ИНСТРУКТАЖЕЙ ПО ОХРАНЕ ТРУДА",h:["Дата", "Вид инструктажа, кто проинструктирован, тема", "Подпись инструктируемого, визы"],f:["Вид инструктажа", "Ф.И.О., должность проинструктированного", "Тема, номер инструкции"]},
+ drill:{n:"Журнал противоаварийных и противопожарных тренировок",t:"ЖУРНАЛ ПРОТИВОАВАРИЙНЫХ И ПРОТИВОПОЖАРНЫХ ТРЕНИРОВОК",h:["Дата и время", "Вид, тема, участники, результаты тренировки", "Визы, замечания"],f:["Вид тренировки", "Тема, сценарий", "Участники", "Результат, замечания"]},
+ repair:{n:"Журнал учёта ремонтных работ",t:"ЖУРНАЛ УЧЁТА РЕМОНТНЫХ РАБОТ",h:["Дата и время", "Объект, вид работ, исполнители, результат", "Визы, приёмка работ"],f:["Объект, оборудование", "Вид и содержание работ", "Исполнители", "Результат, приёмка"]},
+ ppe:{n:"Журнал учёта средств защиты и ключей",t:"ЖУРНАЛ УЧЁТА СРЕДСТВ ЗАЩИТЫ И КЛЮЧЕЙ",h:["Дата и время", "Наименование, кому выдано / от кого принято, состояние", "Подпись получившего, визы"],f:["Наименование (СИЗ, ключ №)", "Кому выдано / от кого принято", "Выдано или возвращено", "Состояние, дата проверки"]},
+ injury:{n:"Журнал производственных травм и несчастных случаев",t:"ЖУРНАЛ ПРОИЗВОДСТВЕННЫХ ТРАВМ И НЕСЧАСТНЫХ СЛУЧАЕВ",h:["Дата и время", "Пострадавший, обстоятельства, помощь, меры", "Визы, расследование"],f:["Пострадавший (Ф.И.О., должность)", "Дата, место, обстоятельства", "Характер травмы, оказанная помощь", "Принятые меры, расследование"]},
+ know:{n:"Журнал проверки знаний",t:"ЖУРНАЛ ПРОВЕРКИ ЗНАНИЙ",h:["Дата", "Ф.И.О., вид проверки, результат", "Подпись, визы комиссии"],f:["Ф.И.О., должность", "Вид проверки, тема", "Результат (оценка)", "Комиссия, дата следующей проверки"]},
+ uchet:{n:"Журнал учёта",t:"ЖУРНАЛ УЧЁТА",h:["Дата и время записи", "Наименование, количество, основание записи", "Подпись, примечания"],f:["Наименование", "Количество", "Основание"]},
+ viol:{n:"Журнал правонарушений",t:"ЖУРНАЛ ПРАВОНАРУШЕНИЙ",h:["Дата и время нарушения", "Содержание нарушения (кто, что, где), принятые меры", "Визы, замечания и распоряжения"],f:["Нарушитель (Ф.И.О., должность)", "Содержание нарушения", "Принятые меры"]},
+ meas:{n:"Журнал измерений",t:"ЖУРНАЛ ИЗМЕРЕНИЙ",h:["Дата и время измерения", "Параметр, место измерения, результат (значение, ед. изм.)", "Визы, замечания"],f:["Параметр", "Место измерения", "Результат (значение, ед. изм.)"]}};
+const jKind=()=>{const k=$("jkind").value||"oper",old=jEd&&(jrs.find(x=>x.id===jEd)||{}).kind;return k!=="oper"||old?{kind:k}:{}};
 function openJ(id){if(!isOwner)return;jEd=id;const j=id?jrs.find(x=>x.id===id):null,ds=depts.length?depts:DEPT;
  $("jdt").textContent=j?"Настройки журнала":"Новый журнал";
  $("jdp").innerHTML=ds.map(d=>`<option>${esc(d)}</option>`).join("");
+ $("jkind").innerHTML=Object.keys(KINDS).map(k=>`<option value="${k}">${KINDS[k].n}</option>`).join("");$("jkind").value=j&&KINDS[j.kind]?j.kind:"oper";
  $("jn").value=j?j.name||"":"ОПЕРАТИВНЫЙ ЖУРНАЛ";$("jdp").value=j?.dept||(dept!=="*"?dept:ds[0]);$("jpg").value=j?.pages||100;
  $("tinv").value=j?.inv||"";$("tunit").value=j?.unit||"";$("tst").value=j?.start||"";$("ten").value=j?.end||"";$("jcol").value=j?.color||COLORS[0];
  $("jdel").hidden=!j;$("jsb").innerHTML=`<option value="">— без подписи —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("jsb").value=j?.signBy||"";posBox("jrp",j&&j.readPos);posBox("jep",j&&j.editPos);$("jd").showModal()}
 const posBox=(id,sel)=>{$(id).innerHTML=P().map(x=>`<label class="chk"><input type="checkbox" value="${esc(x)}"${(sel||[]).includes(x)?" checked":""}> ${esc(x)}</label>`).join("")||`<span class="hint">Сначала добавьте должности в «Управлении».</span>`};
 const pickPos=id=>[...$(id).querySelectorAll("input:checked")].map(i=>i.value);
-const jData=()=>({readPos:pickPos("jrp"),editPos:pickPos("jep"),name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value});
+const jData=()=>({readPos:pickPos("jrp"),editPos:pickPos("jep"),name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value,...jKind()});
+$("jkind").onchange=()=>{const n=$("jn").value.trim();if(!n||Object.values(KINDS).some(x=>x.t===n))$("jn").value=KINDS[$("jkind").value].t};
 $("jsv").onclick=()=>safe(async()=>{if(jEd)await db.doc("journals/"+jEd).update(jData());
  else await db.doc("journals/"+(jrs.length?"j"+Date.now():"main")).set({...jData(),createdAt:Date.now(),by:uid});$("jd").close()});
 let jdf;$("jdel").onclick=()=>safe(async()=>{
@@ -830,7 +871,7 @@ const g_=o=>o||{};
 const MAP={
  profiles:r=>({name:r.full_name,sig:r.signature,sigs:(r.signatures&&r.signatures.length)?r.signatures:(r.signature?[r.signature]:[]),createdAt:tsn(r.created_at),font:r.font,avatar:r.avatar,about:r.about||"",exp:r.experience,discord:r.discord||"",team:r.team||"",deptId:r.dept_id,dept:dName(r.dept_id)||""}),
  roles:r=>({position:r.position||"",approved:!!r.approved||r.role==="owner"}),
- journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",readPos:r.read_pos||[],editPos:r.edit_pos||[],createdAt:tsn(r.created_at),by:r.created_by}),
+ journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",kind:r.kind||"",readPos:r.read_pos||[],editPos:r.edit_pos||[],createdAt:tsn(r.created_at),by:r.created_by}),
  shifts:r=>({team:r.team,j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
   handBy:r.hand_by,handName:r.hand_name,handLabel:r.hand_label,handInk:r.hand_ink,handSgV:g_(r.hand_sg).v,handSgS:g_(r.hand_sg).s,handSgX:g_(r.hand_sg).x,handSgY:g_(r.hand_sg).y,handNoSg:g_(r.hand_sg).nosg,
   accBy:r.acc_by,accName:r.acc_name,accLabel:r.acc_label,accInk:r.acc_ink,accTime:r.acc_at,accSgV:g_(r.acc_sg).v,accSgS:g_(r.acc_sg).s,accSgX:g_(r.acc_sg).x,accSgY:g_(r.acc_sg).y,accNoSg:g_(r.acc_sg).nosg}),
@@ -850,7 +891,7 @@ const loadAll=()=>Promise.all(Object.keys(ORD).map(t=>fetchAll(t).then(r=>RAW[t]
 async function reload(t){RAW[t]=await fetchAll(t);AFFECT[t].forEach(k=>emit(k))}
 const fail=e=>{if(e)throw new Error(e.message||e.code)};
 const ROW={
- journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended"};
+ journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended",kind:"kind"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;if("readPos"in o)r.read_pos=o.readPos||[];if("editPos"in o)r.edit_pos=o.editPos||[];return r},
  shifts:(o,cur)=>{const r={},m={team:"team",d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("fh"in o)r.fh=+o.fh;if("uh"in o)r.uh=+o.uh;if("accTime"in o)r.acc_at=new Date().toISOString();
@@ -1042,6 +1083,10 @@ Object.assign(TRD.en,{"Логин":"Login","Логин (латиницей)":"Lo
 "Логин: 3–30 символов, латиница, цифры, точка, дефис, подчёркивание":"Login: 3–30 characters, Latin letters, digits, dot, hyphen, underscore"});
 Object.assign(TRD.uk,{"Первый вход: ваше имя и подписи":"Перший вхід: ваше ім'я та підписи","Сохранить и войти":"Зберегти й увійти"});
 Object.assign(TRD.en,{"Первый вход: ваше имя и подписи":"First login: your name and signatures","Сохранить и войти":"Save and continue"});
+Object.assign(TRD.uk,{"Тип журнала:":"Тип журналу:","Оперативный журнал":"Оперативний журнал","Журнал учёта":"Журнал обліку","Журнал правонарушений":"Журнал правопорушень","Журнал измерений":"Журнал вимірів"});
+Object.assign(TRD.en,{"Тип журнала:":"Journal type:","Оперативный журнал":"Operations log","Журнал учёта":"Accounting log","Журнал правонарушений":"Violations log","Журнал измерений":"Measurements log"});
+Object.assign(TRD.uk,{"Журнал оперативных переключений": "Журнал оперативних перемикань", "Журнал дефектов и неисправностей оборудования": "Журнал дефектів і несправностей обладнання", "Журнал нарядов-допусков и распоряжений": "Журнал нарядів-допусків і розпоряджень", "Журнал дозиметрического контроля": "Журнал дозиметричного контролю", "Журнал инструктажей по охране труда": "Журнал інструктажів з охорони праці", "Журнал противоаварийных и противопожарных тренировок": "Журнал протиаварійних і протипожежних тренувань", "Журнал учёта ремонтных работ": "Журнал обліку ремонтних робіт", "Журнал учёта средств защиты и ключей": "Журнал обліку засобів захисту та ключів", "Журнал производственных травм и несчастных случаев": "Журнал виробничих травм і нещасних випадків", "Журнал проверки знаний": "Журнал перевірки знань", "Дополнительно (необязательно):": "Додатково (необов'язково):"});
+Object.assign(TRD.en,{"Журнал оперативных переключений": "Operational switching log", "Журнал дефектов и неисправностей оборудования": "Equipment defects and faults log", "Журнал нарядов-допусков и распоряжений": "Work permits and orders log", "Журнал дозиметрического контроля": "Dosimetry control log", "Журнал инструктажей по охране труда": "Safety briefing log", "Журнал противоаварийных и противопожарных тренировок": "Emergency and fire drills log", "Журнал учёта ремонтных работ": "Repair work log", "Журнал учёта средств защиты и ключей": "Protective equipment and keys log", "Журнал производственных травм и несчастных случаев": "Workplace injuries and accidents log", "Журнал проверки знаний": "Knowledge testing log", "Дополнительно (необязательно):": "Additional (optional):"});
 const TRP=[
 [/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
 [/^Журнал заполнен: записи вышли за (\d+) страниц\.$/,{uk:"Журнал заповнено: записи вийшли за $1 сторінок.",en:"Journal is full: entries exceed $1 pages."}],
