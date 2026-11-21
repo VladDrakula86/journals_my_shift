@@ -114,19 +114,12 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 <div class="bar"><div class="brand"><span class="logo" role="img" aria-label="MIRNIY ATOM"></span><div><div class="bn">MIRNIY ATOM</div><h1>Оперативный журнал смены</h1></div></div><div id="lang" class="g" data-ru><button data-l="uk" class="ghost" type="button">UA</button><button data-l="ru" class="ghost" type="button">RU</button><button data-l="en" class="ghost" type="button">EN</button></div><span id="yrb" class="hint" data-ru style="font-weight:700"></span><div id="bar"></div></div>
 <div id="msg" class="hint"></div>
 <div id="auth" class="card" hidden style="max-width:460px;margin:30px auto"><div style="text-align:center"><span class="logo lg"></span><div class="bn" style="font:800 20px system-ui;letter-spacing:.24em;color:var(--acc);margin:6px 0 10px">MIRNIY ATOM</div></div>
- <div class="g"><button id="tlog" type="button">Вход</button><button class="ghost" id="treg" type="button">Регистрация</button></div>
+ <div class="g"><b id="tlog">Вход</b></div>
  <p id="aerr" class="hint" style="color:#b3261e;min-height:1.4em;margin:4px 0"></p>
- <form id="flog" autocomplete="on"><div class="g"><input id="ae" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
+ <form id="flog" autocomplete="on"><div class="g"><input id="ae" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Логин" style="flex:1;min-width:200px" required></div>
   <div class="g"><input id="ap" type="password" autocomplete="current-password" placeholder="Пароль" style="flex:1;min-width:200px" required></div>
   <div class="g"><button id="ain" type="submit">Войти</button><a href="#" id="lfg" class="hint">Забыли пароль?</a></div></form>
- <form id="freg" hidden><div class="g"><input id="ge" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
-  <div class="g"><input id="gp" type="password" autocomplete="new-password" placeholder="Пароль" style="flex:1;min-width:140px" required><input id="gp2" type="password" autocomplete="new-password" placeholder="Повторите пароль" style="flex:1;min-width:140px" required></div>
-  <div class="g"><input id="an" placeholder="Фамилия И.О. (как в журнале)" style="flex:1;min-width:200px" required></div>
-  <div class="g"><select id="ad" style="flex:1"></select></div>
-  <p class="hint" style="margin:6px 0 2px">Ваша подпись (мышью или пальцем):</p><div id="sgbox"></div>
-  <div class="g"><button class="ghost" id="sgc2" type="button" hidden>Очистить</button><button id="aup" type="submit">Создать аккаунт</button></div>
-  <p class="hint">После регистрации владелец журнала подтверждает вас и назначает должность.</p></form>
- <form id="frst" hidden><div class="g"><input id="re" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
+  <form id="frst" hidden><div class="g"><input id="re" type="email" autocomplete="username" placeholder="Почта" style="flex:1;min-width:200px" required></div>
   <div class="g"><button id="rsb" type="submit">Отправить ссылку для сброса</button><a href="#" id="lback" class="hint">Назад ко входу</a></div></form>
  <form id="fnew" hidden><div class="g"><input id="np" type="password" autocomplete="new-password" placeholder="Новый пароль" style="flex:1;min-width:200px" required></div>
   <div class="g"><button type="submit">Сохранить пароль</button></div></form>
@@ -200,6 +193,11 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 </dialog>
 <dialog id="od" style="max-width:900px;width:96%"><b>Управление</b>
  <p class="hint">Подтверждение пользователей и их должности.</p><div id="users"></div>
+ <p><b>Новый аккаунт</b> <span class="hint">(вы выдаёте логин и пароль; почта не нужна)</span></p>
+ <div class="g"><input id="nlg" placeholder="Логин (латиницей)" autocapitalize="none" style="flex:1;min-width:150px"><input id="npw" placeholder="Пароль" style="flex:1;min-width:150px"><button class="ghost" id="npg" type="button">Сгенерировать</button></div>
+ <div class="g"><input id="nnm" placeholder="Фамилия И.О." style="flex:1;min-width:150px"><select id="ndp"></select><select id="ntm"></select><select id="npo"></select></div>
+ <div class="g"><button id="ncr" type="button">Создать аккаунт</button></div>
+ <p class="hint" id="ninfo"></p>
  <p><b>Год сайта</b> (фактическое время с другим годом)</p>
  <div class="g"><input id="syr" class="n" type="number" min="1900" max="2200" placeholder="1986"><button id="ssv3">Сохранить год</button><button class="ghost" id="srs">Сбросить (реальный год)</button></div>
  <p class="hint"><span>Сейчас на сайте:</span> <b id="sinfo"></b></p>
@@ -702,20 +700,42 @@ $("psv").onclick=()=>safe(async()=>{const n=$("pn").value.trim();if(!n)return to
 function renderUsers(){
  if(!isOwner||!$("od").open)return;
  const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i)),dl=depts.length?depts:DEPT;
- $("users").innerHTML=ids.length?`<table>${ids.map(i=>{const p=prof[i],r=roles[i]||{};return`<tr data-u="${i}"><td>${av(p,32)}</td><td><b>${esc(p.name)}</b><div class="hint">${p.exp!=null?`<span>Стаж:</span> ${esc(p.exp)} `:""}${p.discord?"· "+esc(p.discord):""}</div></td>
+ $("users").innerHTML=ids.length?`<table>${ids.map(i=>{const p=prof[i],r=roles[i]||{};return`<tr data-u="${i}"><td>${av(p,32)}</td><td><b>${esc(p.name)}</b><div class="hint">${LOGINS[i]?`<span>Логин:</span> <b>${esc(LOGINS[i])}</b> `:""}${p.exp!=null?`<span>Стаж:</span> ${esc(p.exp)} `:""}${p.discord?"· "+esc(p.discord):""}</div></td>
  <td><select data-f="1">${FONTS.map((f,k)=>`<option value="${k}" style="font-family:'${f}'"${fo(i)===k?" selected":""}>Почерк ${k+1}</option>`).join("")}</select></td>
  ${i===uid?`<td colspan="5" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(x=>`<option${r.position===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><select data-t="1"><option value="">—</option>${teams.map(x=>`<option${p.team===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><select data-d="1"><option value="">—</option>${dl.map(x=>`<option${p.dept===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><label><input type="checkbox"${r.approved?" checked":""}> разрешено</label></td>
- <td><button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`}).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
+ <td><button class="ghost" data-pw="1" title="Сменить пароль">🔑</button> <button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`}).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
 }
-$("users").onclick=e=>{const b=e.target.closest("[data-del]");if(!b)return;const id=b.closest("tr").dataset.u;if(id===uid)return toast("Нельзя удалить самого себя");
+$("users").onclick=e=>{const k=e.target.closest("[data-pw]");
+ if(k){const id=k.closest("tr").dataset.u,p=prompt(tr("Новый пароль для")+" "+((prof[id]||{}).name||""));if(p==null)return;
+  if(p.length<6)return toast("Пароль должен быть не короче 6 символов");safe(async()=>{await fnCall({action:"password",id,password:p});toast("Пароль изменён.")});return}
+ const b=e.target.closest("[data-del]");if(!b)return;const id=b.closest("tr").dataset.u;if(id===uid)return toast("Нельзя удалить самого себя");
  if(!confirm(tr("Удалить пользователя?")+"\n"+(prof[id]?prof[id].name:"")))return;
  safe(async()=>{fail((await sb.rpc("delete_user",{target:id})).error);await reload("profiles");toast("Пользователь удалён")})};
 $("users").onchange=e=>safe(async()=>{const tr=e.target.closest("tr");if(!tr)return;const id=tr.dataset.u;
  if(e.target.dataset.f)return await db.doc("profiles/"+id).update({font:+e.target.value});
  await db.doc("roles/"+id).set({position:tr.querySelector("[data-p]").value,team:tr.querySelector("[data-t]").value,dept:tr.querySelector("[data-d]").value,approved:tr.querySelector("input").checked});});
+
+// ---- аккаунты создаёт владелец (серверная функция create-user в Supabase)
+let LOGINS={};
+async function fnCall(b){const r=await sb.functions.invoke("create-user",{body:b});
+ if(r.error){let m=r.error.message;try{const j=await r.error.context.json();if(j&&j.error)m=j.error}catch(e){}throw new Error(m)}
+ if(r.data&&r.data.error)throw new Error(r.data.error);return r.data}
+function loadLogins(){fnCall({action:"list"}).then(d=>{LOGINS={};(d.users||[]).forEach(u=>LOGINS[u.id]=u.login);renderUsers()}).catch(()=>{})}
+function fillNew(){const ds=depts.length?depts:DEPT,o=a=>a.map(x=>`<option>${esc(x)}</option>`).join("");
+ $("ndp").innerHTML='<option value="">— цех —</option>'+o(ds);$("ntm").innerHTML='<option value="">— смена —</option>'+o(teams);$("npo").innerHTML='<option value="">— должность —</option>'+o(P())}
+document.addEventListener("click",e=>{if(e.target.closest("#ob")){fillNew();loadLogins();$("ninfo").textContent=""}});
+$("npg").onclick=()=>{const c="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";$("npw").value=[...crypto.getRandomValues(new Uint32Array(10))].map(x=>c[x%c.length]).join("")};
+$("ncr").onclick=()=>safe(async()=>{
+ const login=$("nlg").value.trim().toLowerCase(),pw=$("npw").value,name=$("nnm").value.trim();
+ if(!/^[a-z0-9._-]{3,30}$/.test(login))return toast("Логин: 3–30 символов, латиница, цифры, точка, дефис, подчёркивание");
+ if(pw.length<6)return toast("Пароль должен быть не короче 6 символов");
+ if(!name)return toast("Укажите фамилию");
+ await fnCall({action:"create",login,password:pw,name,dept_id:dId($("ndp").value),team:$("ntm").value||null,position:$("npo").value||null});
+ $("ninfo").innerHTML=`<span>Аккаунт создан.</span> <span>Логин:</span> <b>${esc(login)}</b> · <span>Пароль:</span> <b>${esc(pw)}</b> — <span>передайте человеку.</span>`;
+ ["nlg","npw","nnm"].forEach(i=>$(i).value="");await reload("profiles");loadLogins()});
 $("tsv").onclick=()=>safe(async()=>{await db.doc("config/teams").set({list:$("tl").value.split("\n").map(x=>x.trim()).filter(Boolean)});toast("Смены сохранены")});
 $("ps").onclick=()=>safe(async()=>{await db.doc("config/positions").set({list:$("pl").value.split("\n").map(s=>s.trim()).filter(Boolean)});toast("Должности сохранены")});
 let jEd=null;
@@ -876,32 +896,23 @@ function live(){const tm={};
  setInterval(()=>Object.keys(ORD).forEach(t=>reload(t).catch(()=>{})),120000)}
 // ---- вхід і реєстрація ----
 const aerr=m=>{m=String(m&&(m.message||m.code)||m);
- if(/Invalid login/i.test(m))return"Неверная почта или пароль";if(/not confirmed/i.test(m))return"Почта не подтверждена. Проверьте письмо.";
+ if(/Invalid login/i.test(m))return"Неверный логин или пароль";if(/not confirmed/i.test(m))return"Почта не подтверждена. Проверьте письмо.";
  if(/already registered|already been registered/i.test(m))return"Эта почта уже зарегистрирована";if(/at least 6|weak/i.test(m))return"Пароль должен быть не короче 6 символов";
  if(/rate limit|too many/i.test(m))return"Слишком много попыток. Подождите и повторите.";return m};
+const LOGIN_DOM="journal.local",toEmail=v=>{v=String(v||"").trim();return v?(v.includes("@")?v:v.toLowerCase()+"@"+LOGIN_DOM):""};
 const aset=m=>{$("aerr").textContent=m||""};
-const aform=n=>{["flog","freg","frst","fnew"].forEach(i=>$(i).hidden=i!==n);$("tlog").classList.toggle("ghost",n!=="flog"&&n!=="frst");$("treg").classList.toggle("ghost",n!=="freg");aset("");
- if(n==="freg"){$("sgbox").appendChild($("sgw"));sgReset(null)}};
+const aform=n=>{["flog","frst","fnew"].forEach(i=>$(i).hidden=i!==n);aset("")};
 let busyReg=false;
 async function savePending(id){try{const p=JSON.parse(localStorage.getItem("pendSig")||"null");if(!p)return;
  await sb.from("profiles").update({signature:(p.sigs||[p.sig])[0],signatures:p.sigs||[p.sig],full_name:p.name||undefined}).eq("id",id);localStorage.removeItem("pendSig")}catch(e){}}
 async function showAuth(){
  $("auth").hidden=false;$("reg").hidden=true;$("app").hidden=true;aform("flog");
- const{data}=await sb.from("departments").select("*").order("sort");
- $("ad").innerHTML='<option value="">— цех —</option>'+(data||[]).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join("");
- $("tlog").onclick=()=>aform("flog");$("treg").onclick=()=>aform("freg");$("lfg").onclick=e=>{e.preventDefault();aform("frst")};
+ $("lfg").onclick=e=>{e.preventDefault();aform("frst")};
  $("lback").onclick=e=>{e.preventDefault();aform("flog")};
  const busy=(b,f)=>async e=>{e.preventDefault();aset("");b.disabled=true;try{await f()}catch(x){aset(aerr(x))}b.disabled=false;busyReg=false};
- $("flog").onsubmit=busy($("ain"),async()=>{const em=$("ae").value.trim();if(!em)return aset("Укажите почту");fail((await sb.auth.signInWithPassword({email:em,password:$("ap").value})).error)});
+ $("flog").onsubmit=busy($("ain"),async()=>{const em=toEmail($("ae").value);if(!em)return aset("Укажите логин");fail((await sb.auth.signInWithPassword({email:em,password:$("ap").value})).error)});
  $("frst").onsubmit=busy($("rsb"),async()=>{const em=$("re").value.trim();if(!em)return aset("Укажите почту");
   fail((await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin})).error);aset("Письмо для сброса пароля отправлено.")});
- $("freg").onsubmit=busy($("aup"),async()=>{const em=$("ge").value.trim(),n=$("an").value.trim(),p=$("gp").value;
-  if(!em)return aset("Укажите почту");if(!n)return aset("Укажите фамилию");if(p.length<6)return aset("Пароль должен быть не короче 6 символов");
-  if(p!==$("gp2").value)return aset("Пароли не совпадают");const sigs=sgAll();if(!sigs.length)return aset("Нарисуйте подпись");
-  busyReg=true;const r=await sb.auth.signUp({email:em,password:p,options:{data:{full_name:n,dept_id:$("ad").value}}});fail(r.error);
-  if(r.data.session){fail((await sb.from("profiles").update({signature:sigs[0],signatures:sigs,full_name:n}).eq("id",r.data.session.user.id)).error);location.reload();return}
-  localStorage.setItem("pendSig",JSON.stringify({sigs,name:n}));aform("flog");aset("Проверьте почту и подтвердите адрес, затем войдите.")});
- $("sgc2").onclick=()=>{cx.clearRect(0,0,cv.width,cv.height);drew=false};
 }
 function showReset(){$("auth").hidden=false;$("reg").hidden=true;$("app").hidden=true;aform("fnew");
  $("fnew").onsubmit=async e=>{e.preventDefault();aset("");try{const p=$("np").value;if(p.length<6)return aset("Пароль должен быть не короче 6 символов");
@@ -1020,6 +1031,14 @@ en:{
 "Реальное время:":"Real time:","Частей:":"Parts:",
 "Ошибка связи с базой: ":"Database connection error: "
 }};
+Object.assign(TRD.uk,{"Логин":"Логін","Логин (латиницей)":"Логін (латиницею)","Укажите логин":"Вкажіть логін","Неверный логин или пароль":"Неправильний логін або пароль","Новый аккаунт":"Новий акаунт",
+"(вы выдаёте логин и пароль; почта не нужна)":"(ви видаєте логін і пароль; пошта не потрібна)","Сгенерировать":"Згенерувати","— смена —":"— зміна —","— должность —":"— посада —",
+"Аккаунт создан.":"Акаунт створено.","Логин:":"Логін:","Пароль:":"Пароль:","— передайте человеку.":"— передайте людині.","Сменить пароль":"Змінити пароль","Новый пароль для":"Новий пароль для",
+"Логин: 3–30 символов, латиница, цифры, точка, дефис, подчёркивание":"Логін: 3–30 символів, латиниця, цифри, крапка, дефіс, підкреслення"});
+Object.assign(TRD.en,{"Логин":"Login","Логин (латиницей)":"Login (Latin letters)","Укажите логин":"Enter your login","Неверный логин или пароль":"Wrong login or password","Новый аккаунт":"New account",
+"(вы выдаёте логин и пароль; почта не нужна)":"(you issue the login and password; no email needed)","Сгенерировать":"Generate","— смена —":"— shift —","— должность —":"— position —",
+"Аккаунт создан.":"Account created.","Логин:":"Login:","Пароль:":"Password:","— передайте человеку.":"— give them to the person.","Сменить пароль":"Change password","Новый пароль для":"New password for",
+"Логин: 3–30 символов, латиница, цифры, точка, дефис, подчёркивание":"Login: 3–30 characters, Latin letters, digits, dot, hyphen, underscore"});
 const TRP=[
 [/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
 [/^Журнал заполнен: записи вышли за (\d+) страниц\.$/,{uk:"Журнал заповнено: записи вийшли за $1 сторінок.",en:"Journal is full: entries exceed $1 pages."}],
