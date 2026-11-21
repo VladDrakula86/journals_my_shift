@@ -34,7 +34,7 @@ select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;bac
 .pu{display:flex;align-items:center;gap:8px;padding:4px 2px}.pu.off{opacity:.55}.pu span.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#7b8499;flex:none}.dot.on{background:#2ecc71;box-shadow:0 0 0 3px #2ecc7144}
 #pres details summary{cursor:pointer;opacity:.75;margin-top:8px}
-body.hasp main{margin:0 12px 0 258px}
+@media(min-width:1280px){body.hasp:not(.wide) main{margin-left:max(258px,calc((100% - 1124px)/2));margin-right:max(12px,calc((100% - 1124px)/2))}body.hasp.wide main{margin:0 12px 0 258px}}
 @media(max-width:1279px){#pres{position:static;width:auto;max-height:none;margin:8px 8px 0}body.hasp main{margin:0 auto}}
 .rclk{position:fixed;right:10px;bottom:8px;z-index:20;font-size:12px;background:var(--card);border:1px solid #8886;border-radius:8px;padding:4px 10px;opacity:.92}
 .chk{display:inline-flex;gap:4px;align-items:center;margin-right:10px}
@@ -125,11 +125,11 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
   <div class="g"><button type="submit">Сохранить пароль</button></div></form>
 </div>
 <div id="reg" class="card" hidden>
- <b>Завершение регистрации: ваша подпись</b>
+ <b>Первый вход: ваше имя и подписи</b>
  <div class="g"><input id="rn" placeholder="Фамилия И.О." style="flex:1;min-width:180px"></div>
  <p class="hint">Нарисуйте свою подпись (мышью или пальцем):</p>
  <div id="sgholder"><div id="sgw"><div class="g" id="sgtabs"></div><canvas id="sg" width="560" height="280"></canvas><div class="g"><button class="ghost" id="sgclr" type="button">Очистить</button></div></div></div>
- <div class="g"><button class="ghost" id="sgc" hidden>Очистить</button><button id="rok">Зарегистрироваться</button></div>
+ <div class="g"><button class="ghost" id="sgc" hidden>Очистить</button><button id="rok">Сохранить и войти</button><button class="ghost" id="rlo" type="button">Выйти</button></div>
 </div>
 <div id="app" hidden>
  <div id="big" class="card"></div>
@@ -292,6 +292,7 @@ function sgAll(){sgStore();return sgSlots.filter(Boolean)}
 $("sgtabs").onclick=e=>{const b=e.target.closest("[data-sg]");if(b)sgShow(+b.dataset.sg)};
 $("sgclr").onclick=()=>{cx.clearRect(0,0,cv.width,cv.height);drew=false;sgSlots[sgCur]=null;sgDirty=false;sgTabs()};
 cv.addEventListener("pointerup",()=>{sgDirty=true});sgReset(null);
+$("rlo").onclick=()=>sb.auth.signOut();
 $("rok").onclick=()=>safe(async()=>{
  const name=$("rn").value.trim(),sigs=sgAll();if(!name||!sigs.length)return toast("Укажите фамилию и нарисуйте подпись");
  await db.doc("profiles/"+uid).set({name,sigs,createdAt:Date.now(),font:pickFont()});});
@@ -1039,6 +1040,8 @@ Object.assign(TRD.en,{"Логин":"Login","Логин (латиницей)":"Lo
 "(вы выдаёте логин и пароль; почта не нужна)":"(you issue the login and password; no email needed)","Сгенерировать":"Generate","— смена —":"— shift —","— должность —":"— position —",
 "Аккаунт создан.":"Account created.","Логин:":"Login:","Пароль:":"Password:","— передайте человеку.":"— give them to the person.","Сменить пароль":"Change password","Новый пароль для":"New password for",
 "Логин: 3–30 символов, латиница, цифры, точка, дефис, подчёркивание":"Login: 3–30 characters, Latin letters, digits, dot, hyphen, underscore"});
+Object.assign(TRD.uk,{"Первый вход: ваше имя и подписи":"Перший вхід: ваше ім'я та підписи","Сохранить и войти":"Зберегти й увійти"});
+Object.assign(TRD.en,{"Первый вход: ваше имя и подписи":"First login: your name and signatures","Сохранить и войти":"Save and continue"});
 const TRP=[
 [/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
 [/^Журнал заполнен: записи вышли за (\d+) страниц\.$/,{uk:"Журнал заповнено: записи вийшли за $1 сторінок.",en:"Journal is full: entries exceed $1 pages."}],
