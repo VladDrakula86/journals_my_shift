@@ -119,6 +119,8 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 #roster .rt tr.cur td{background:#ffd23f26}
 #roster .rt tr.cur td.nowc{background:#ff8a00;color:#000;font-weight:800;box-shadow:inset 0 0 0 2px #fff}
 .kfl{display:flex;gap:8px;align-items:center;margin:4px 0;flex-wrap:wrap}.kfl span{min-width:210px;font-size:13px;opacity:.9}.kfl input{flex:1;min-width:200px}
+.pp{width:100%;flex:1}.ppl{max-height:160px;overflow:auto;display:flex;flex-wrap:wrap;gap:4px 12px;padding:6px;border:1px solid #8884;border-radius:8px;margin:4px 0}.ppsel{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+#accts details{margin:10px 0}#accts summary{cursor:pointer;padding:6px 0}#accts table{width:100%;border-collapse:collapse}#accts td,#accts th{padding:4px 6px;text-align:left;vertical-align:middle}
 </style></head><body><aside id="pres" hidden><div class="pt">Актив сайта</div>
  <div class="pc"><span class="dot on"></span> <span>Сейчас на сайте:</span> <b id="pcnt">0</b></div>
  <div id="plist2"></div>
@@ -146,7 +148,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 </div>
 <div id="app" hidden>
  <div id="big" class="card"></div>
- <div class="g" id="tabs"><button id="tabJ" type="button">Журналы</button><button class="ghost" id="tabC" type="button">Состав смены</button><button class="ghost" id="tabS" type="button">График смен</button><button class="ghost" id="tabD" type="button">Документы</button><span id="clk" class="clk" data-ru></span></div>
+ <div class="g" id="tabs"><button id="tabJ" type="button">Журналы</button><button class="ghost" id="tabC" type="button">Состав смены</button><button class="ghost" id="tabS" type="button">График смен</button><button class="ghost" id="tabD" type="button">Документы</button><button class="ghost" id="tabA" type="button" hidden>Аккаунты</button><span id="clk" class="clk" data-ru></span></div>
  <div id="lib">
   <div class="g" id="depts"></div>
   <div class="g"><button id="jnew" hidden>＋ Новый журнал</button></div>
@@ -155,6 +157,27 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div id="sched" hidden></div>
  <div id="roster" hidden></div>
  <div id="docs" hidden></div>
+ <div id="accts" hidden>
+  <details id="abulk" class="card" open><summary><b>Массовое создание аккаунтов</b></summary>
+   <p class="hint"><span>Каждая строка — один человек:</span> <b>Фамилия И.О.; цех; смена; должность</b>. <span>Цех, смена и должность не обязательны.</span> <span>Разделитель «;» или Tab (можно вставлять из Excel). Логины и пароли создаются автоматически.</span></p>
+   <textarea id="bkt" rows="7" style="width:100%" placeholder="Сайко В.С.; ЭЦ; 1 (А); НСС"></textarea>
+   <div class="g"><button id="bkp" type="button">Подготовить список</button></div>
+   <div id="bkout"></div>
+  </details>
+  <details class="card"><summary><b>Один аккаунт</b></summary>
+   <p class="hint">(вы выдаёте логин и пароль; почта не нужна)</p>
+   <div class="g"><input id="nlg" placeholder="Логин (латиницей)" autocapitalize="none" style="flex:1;min-width:150px"><input id="npw" placeholder="Пароль" style="flex:1;min-width:150px"><button class="ghost" id="npg" type="button">Сгенерировать</button></div>
+   <div class="g"><input id="nnm" placeholder="Фамилия И.О." style="flex:1;min-width:150px"><select id="ndp"></select><select id="ntm"></select><select id="npo"></select></div>
+   <div class="g"><button id="ncr" type="button">Создать аккаунт</button></div>
+   <p class="hint" id="ninfo"></p>
+  </details>
+  <div class="card">
+   <div class="g"><b>Пользователи</b><input id="uq" placeholder="Поиск по имени или логину…" style="flex:1;min-width:180px"><select id="ufd"></select><select id="uft"></select><select id="ufp"></select><label class="chk"><input type="checkbox" id="ufn"> <span>ожидают подтверждения</span></label></div>
+   <div class="hint" id="ucnt"></div>
+   <div id="users" style="overflow-x:auto"></div>
+   <div class="g"><button class="ghost" id="umore" type="button" hidden>Показать ещё</button></div>
+  </div>
+ </div>
  <div id="jv" hidden>
  <div class="g"><button class="ghost" id="back">← К журналам</button><b id="jname"></b><span id="clk2" class="hint" data-ru style="margin-left:auto"></span></div>
  <div class="g"><button id="newb">+ Новая смена</button><button class="ghost" id="last">⏭ К последней записи</button><button class="ghost" id="pdfb">⬇ PDF</button><button class="ghost" id="jset" hidden>⚙ Настройки журнала</button><button class="ghost" id="xb" hidden>🗑 Удаление…</button></div>
@@ -177,7 +200,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
   <div class="g"><button class="ghost" id="vzb">+ Виза / замечание</button></div>
   <div id="vzbox" hidden><textarea id="vz" rows="2" style="width:100%" placeholder="Визы, замечания…"></textarea>
    <div class="g"><button class="ghost" id="vzc">Отмена</button></div></div>
-  <div class="g"><button id="add">Добавить запись</button>Ответственный по смене: <select id="rsp"></select><button class="ghost" id="close">Завершить смену</button></div>
+  <div class="g"><button id="add">Добавить запись</button><span id="rspw">Ответственный по смене: <select id="rsp"></select><button class="ghost" id="close">Завершить смену</button></span></div>
  </div>
 </div>
 </div>
@@ -206,13 +229,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <div class="g"><button id="psv">Сохранить</button><button class="ghost" id="pcl">Закрыть</button></div>
 </dialog>
 <dialog id="od" style="max-width:900px;width:96%"><b>Управление</b>
- <p class="hint">Подтверждение пользователей и их должности.</p><div id="users"></div>
- <p><b>Новый аккаунт</b> <span class="hint">(вы выдаёте логин и пароль; почта не нужна)</span></p>
- <div class="g"><input id="nlg" placeholder="Логин (латиницей)" autocapitalize="none" style="flex:1;min-width:150px"><input id="npw" placeholder="Пароль" style="flex:1;min-width:150px"><button class="ghost" id="npg" type="button">Сгенерировать</button></div>
- <div class="g"><input id="nnm" placeholder="Фамилия И.О." style="flex:1;min-width:150px"><select id="ndp"></select><select id="ntm"></select><select id="npo"></select></div>
- <div class="g"><button id="ncr" type="button">Создать аккаунт</button></div>
- <p class="hint" id="ninfo"></p>
- <p><b>Год сайта</b> (фактическое время с другим годом)</p>
+  <p><b>Год сайта</b> (фактическое время с другим годом)</p>
  <div class="g"><input id="syr" class="n" type="number" min="1900" max="2200" placeholder="1986"><button id="ssv3">Сохранить год</button><button class="ghost" id="srs">Сбросить (реальный год)</button></div>
  <p class="hint"><span>Сейчас на сайте:</span> <b id="sinfo"></b></p>
  <p class="warn" id="serr"></p>
@@ -236,6 +253,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
 </dialog>
 <dialog id="jd"><b id="jdt">Журнал</b>
  <div class="g">Тип журнала: <select id="jkind" style="flex:1"></select></div>
+ <div class="g"><label class="chk"><input type="checkbox" id="joff"> <span>Журнал вне смены (для неоперативного персонала)</span></label></div>
  <div class="g"><input id="jn" placeholder="Название журнала" style="flex:1"></div>
  <div class="g"><select id="jdp"></select> страниц: <input id="jpg" type="number" min="1" max="500" class="n"></div>
  <div class="g"><input id="tinv" placeholder="Инв. № …" style="flex:1"><input id="tunit" placeholder="Подразделение (надпись на титуле)" style="flex:1"></div>
@@ -324,7 +342,7 @@ function renderBar(){
  $("ownh").hidden=!approved();$("jset").hidden=!isOwner;$("xb").hidden=!isOwner;$("jnew").hidden=!isOwner;
  if(!approved()){$("msg").textContent="Ожидайте подтверждения владельцем журнала — записывать пока нельзя.";$("msg").dataset.w="1"}
  else if($("msg").dataset.w){$("msg").textContent="";delete $("msg").dataset.w}
- $("newb").hidden=!canNew();
+ $("newb").hidden=!canNew()||!!(J&&J.offshift);
 }
 const nm=x=>String(x||"").toLowerCase().replace(/[\s.,]/g,"");
 const av=(p,z=28)=>p&&p.avatar?`<img src="${p.avatar}" width="${z}" height="${z}" style="border-radius:50%;object-fit:cover;vertical-align:middle" alt="">`:`<span style="display:inline-block;width:${z}px;height:${z}px;border-radius:50%;background:#8a7d66;color:#fff;text-align:center;line-height:${z}px;font-size:${Math.round(z*.5)}px;vertical-align:middle">${esc(((p&&p.name)||"?")[0]||"?")}</span>`;
@@ -440,7 +458,7 @@ function tickClock(){const d=siteNow(),loc=locOf(),t=d.toLocaleTimeString(loc,{h
  const rc=$("rclk");if(rc){const n=new Date();rc.textContent=n.toLocaleTimeString(loc,{hour12:false})+" · "+n.toLocaleDateString(loc)}
  const y=$("yrb"),sy=siteYear();if(y)y.textContent=sy?`📅 ${sy}`:""}
 setInterval(tickClock,1000);
-$("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};$("tabD").onclick=()=>{tab="d";all()};
+$("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};$("tabD").onclick=()=>{tab="d";all()};$("tabA").onclick=()=>{tab="a";fillNew();fillAcc();loadLogins();all()};
 setInterval(()=>{if(!$("app").hidden){renderBig();if(curJ)$("cur").innerHTML=banner(latest())}},30000);
 let docsList=null,docUrl=null,docId=null;
 async function loadDocs(){const{data,error}=await sb.from("documents").select("*").order("created_at",{ascending:false});
@@ -467,6 +485,8 @@ $("docs").onclick=e=>{const b=e.target.closest("button");if(!b)return;
    fail((await sb.from("documents").insert({title,path,size:f.size})).error);toast("Документ загружен");await loadDocs()}finally{b.disabled=false}})};
 const hhmm=ms=>{const d=new Date(ms);return pad(d.getHours())+":"+pad(d.getMinutes())};
 function banner(l){
+ if(J&&J.offshift){const w=Object.keys(prof).filter(i=>roles[i]?.approved&&(J.editPos||[]).includes(roles[i]?.position));
+  return`<b>Журнал вне смены</b><div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>только владелец</span>"}</div>`}
  if(!l)return `<span>Смена не открыта</span>`+schedLine(l);
  const st=!l.closed?"открыта":l.accBy?"принята":"ожидает приёма";
  let h=`<b>Текущая смена:</b> <b style="color:var(--acc)">${esc(l.team||"—")}</b> · <span>Смена №${esc(l.num)} от ${esc(fmt(l))}</span> · <span>${st}</span>`;
@@ -474,7 +494,8 @@ function banner(l){
   h+=`<div class="g"><span>Право записи имеют:</span>${w.length?w.map(i=>`<span class="chip2">${av(prof[i],22)} ${esc(prof[i].name)}</span>`).join(" "):"<span>никого</span>"}</div>`}
  return h+schedLine(l)}
 const canUp=()=>isOwner||/(^|[^а-яёіїєґa-z])гис([^а-яёіїєґa-z]|$)|генеральн\S*\s+директор/i.test((roles[uid]||{}).position||"");
-const canWrite=()=>isOwner||(approved()&&onShift());
+const offOk=()=>!!(J&&J.editPos&&J.editPos.length&&J.editPos.includes(myPos()));
+const canWrite=()=>isOwner||(approved()&&(J&&J.offshift?offOk():onShift()));
 const canEdit=by=>isOwner||(by===uid&&canWrite());
 const canMine=by=>isOwner||(!!by&&by===uid&&approved());
 const shade=(h,a)=>{const n=parseInt(h.slice(1),16),c=x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,"0");return"#"+[(n>>16)+a,(n>>8&255)+a,(n&255)+a].map(c).join("")};
@@ -497,6 +518,7 @@ function blocks(){
  const out=[],A=(m,g,at,id)=>out.push({m,g,at,id});
  [...shifts].sort((a,b)=>a.createdAt-b.createdAt).forEach(s=>{
   const st=stOf(s.by,s.ink),sa=`data-s="${s.id}"`,mc=canEdit(s.by)?"mine":"";
+  if(J.offshift){entries.filter(e=>e.shift===s.id).sort((a,b)=>a.ts-b.ts).forEach(e=>A(row(stOf(e.uid,e.ink),`${sdate(e.ts)}<br>${esc(e.time)}`,(e.type==="sign"?"":rich(e.text))+sgOf(prof[e.sgBy||e.uid],e),rich(e.vz||""),canEdit(e.uid)?"mine":"",`data-e="${e.id}"`),1,e.at,e.id));return}
   A(row(st,`${esc(s.d)}.${esc(s.m)}.${esc(s.y)}`,`Смена №${esc(s.num)} с ${hm(s.fh,s.fm,s.f)} до ${hm(s.uh,s.um,s.to)}`,"","ctr "+mc,sa),1,s.at);
   s.crew.forEach(c=>A(row(st,"",`${esc(c.pos)} ${esc(c.name)}`,"","ctr "+mc,sa),0));
   entries.filter(e=>e.shift===s.id).sort((a,b)=>ekey(a,s)-ekey(b,s)||a.ts-b.ts).forEach(e=>
@@ -559,16 +581,16 @@ PGX=page;
  }else{$("book").innerHTML=page(pg,"S");info=pg===0?"Титульный лист":`Стр. ${pg} из ${nPages}`}
  $("pinfo").textContent=info;
  const l=latest(),ap=approved(),cw=canWrite();
- $("composer").hidden=!(l&&cw&&!l.closed);
+ $("composer").hidden=!(l&&cw&&!l.closed);$("rspw").hidden=!!J.offshift;
  const m0=prof[uid]||{},canAcc=!!(l&&ap&&sameDept()&&okEdit()&&(isOwner||(m0.team&&m0.team!==l.team))&&l.closed&&!l.accBy);
  $("vo").hidden=!(ap&&!cw&&!canAcc);
- $("vo").textContent=!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":!okEdit()?"Ваша должность не имеет права редактировать этот журнал.":(l&&l.closed&&l.team===m0.team)?"Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
+ $("vo").textContent=J.offshift?"Писать в этот журнал могут только владелец и должности, указанные в настройках журнала.":!m0.team?"Владелец ещё не назначил вам смену (бригаду): писать нельзя.":(!m0.deptId||m0.deptId!==J.deptId)?"Вы можете писать только в журналах своего цеха.":!okEdit()?"Ваша должность не имеет права редактировать этот журнал.":(l&&l.closed&&l.team===m0.team)?"Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":`Режим просмотра: писать могут только пользователи текущей смены (${(l&&l.team)||"—"}).`;
  $("accp").hidden=!canAcc;
  $("cur").innerHTML=banner(l);
  {const kk=KINDS[J.kind]?J.kind:"oper",kkey=curJ+"|"+kk;if($("kf").dataset.k!==kkey){$("kf").dataset.k=kkey;const f=KINDS[kk].f||[];
   $("kf").innerHTML=f.length?f.map((x,i)=>`<label class="kfl"><span>${esc(x)}</span><input class="kfi" data-i="${i}"></label>`).join("")+`<div class="hint"><span>Дополнительно (необязательно):</span></div>`:""}}
  if(l){const nms=l.crew.map(c=>c.name),key=nms.join("|");if($("rsp").dataset.k!==key){$("rsp").innerHTML=nms.map(n=>`<option>${esc(n)}</option>`).join("");$("rsp").dataset.k=key}}
- if(l){$("cinfo").textContent=`Текущая смена: №${l.num} от ${fmt(l)}`;
+ if(l){$("cinfo").textContent=J.offshift?"Журнал вне смены":`Текущая смена: №${l.num} от ${fmt(l)}`;
   const mine=uid===l.handBy;$("acc").hidden=mine;
   $("accm").textContent=mine?"Смена завершена. Ожидайте, пока следующая смена перечитает записи и примет её.":"Предыдущая смена завершена. Перечитайте её записи и нажмите «Подтвердить» — ваши Ф.И.О. и подпись проставятся автоматически.";}
 }
@@ -721,17 +743,61 @@ $("psv").onclick=()=>safe(async()=>{const n=$("pn").value.trim();if(!n)return to
  if(avData!==undefined)o.avatar=avData;
  const sg=sgAll(),old=(prof[uid]||{}).sigs||[];if(!sg.length)return toast("Нарисуйте подпись");if(JSON.stringify(sg)!==JSON.stringify(old))o.sigs=sg;
  await db.doc("profiles/"+uid).update(o);$("pd").close();toast("Профиль сохранён")});
+let uLim=30;
+function fillAcc(){const ds=depts.length?depts:DEPT,o=a=>a.map(x=>`<option>${esc(x)}</option>`).join("");
+ const keep=(id,h,a)=>{const v=$(id).value;$(id).innerHTML=`<option value="">${h}</option>`+o(a);$(id).value=v};
+ keep("ufd","— все цеха —",ds);keep("uft","— все смены —",teams);keep("ufp","— все должности —",P())}
 function renderUsers(){
- if(!isOwner||!$("od").open)return;
- const ids=Object.keys(prof),fo=i=>FONTS.indexOf(fontOf(i)),dl=depts.length?depts:DEPT;
+ if(!isOwner||tab!=="a"||curJ)return;
+ const q=$("uq").value.trim().toLowerCase(),fd=$("ufd").value,ft=$("uft").value,fp=$("ufp").value,fn=$("ufn").checked,fo=i=>FONTS.indexOf(fontOf(i)),dl=depts.length?depts:DEPT;
+ let ids=Object.keys(prof).filter(i=>{const p=prof[i],r=roles[i]||{};return(!q||(p.name||"").toLowerCase().includes(q)||(LOGINS[i]||"").includes(q))&&(!fd||p.dept===fd)&&(!ft||p.team===ft)&&(!fp||r.position===fp)&&(!fn||!r.approved)}).sort((a,b)=>(prof[a].name||"").localeCompare(prof[b].name||""));
+ const total=ids.length;ids=ids.slice(0,uLim);
+ $("ucnt").textContent=`${tr("Найдено:")} ${total} / ${Object.keys(prof).length}`;
+ $("umore").hidden=total<=uLim;$("umore").textContent=`${tr("Показать ещё")} (${total-uLim})`;
  $("users").innerHTML=ids.length?`<table>${ids.map(i=>{const p=prof[i],r=roles[i]||{};return`<tr data-u="${i}"><td>${av(p,32)}</td><td><b>${esc(p.name)}</b><div class="hint">${LOGINS[i]?`<span>Логин:</span> <b>${esc(LOGINS[i])}</b> `:""}${p.exp!=null?`<span>Стаж:</span> ${esc(p.exp)} `:""}${p.discord?"· "+esc(p.discord):""}</div></td>
  <td><select data-f="1">${FONTS.map((f,k)=>`<option value="${k}" style="font-family:'${f}'"${fo(i)===k?" selected":""}>Почерк ${k+1}</option>`).join("")}</select></td>
  ${i===uid?`<td colspan="5" class="hint">владелец</td>`:`<td><select data-p="1"><option value="">—</option>${P().map(x=>`<option${r.position===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><select data-t="1"><option value="">—</option>${teams.map(x=>`<option${p.team===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><select data-d="1"><option value="">—</option>${dl.map(x=>`<option${p.dept===x?" selected":""}>${esc(x)}</option>`).join("")}</select></td>
  <td><label><input type="checkbox"${r.approved?" checked":""}> разрешено</label></td>
- <td><button class="ghost" data-pw="1" title="Сменить пароль">🔑</button> <button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`}).join("")}</table>`:`<p class="hint">Пока никто не зарегистрировался.</p>`;
+ <td><button class="ghost" data-pw="1" title="Сменить пароль">🔑</button> <button class="ghost" data-del="1" title="Удалить пользователя?">🗑</button></td>`}</tr>`}).join("")}</table>`:`<p class="hint">Никого не найдено.</p>`;
 }
+["uq","ufd","uft","ufp","ufn"].forEach(i=>{const f=()=>{uLim=30;renderUsers()};$(i).addEventListener("input",f);$(i).addEventListener("change",f)});
+$("umore").onclick=()=>{uLim+=30;renderUsers()};
+// ---- массовое создание
+const TL={а:"a",б:"b",в:"v",г:"g",ґ:"g",д:"d",е:"e",є:"ye",ё:"e",ж:"zh",з:"z",и:"i",і:"i",ї:"yi",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
+const translit=t=>String(t||"").toLowerCase().split("").map(c=>TL[c]!==undefined?TL[c]:(/[a-z0-9]/.test(c)?c:"")).join("");
+function mkLogin(name,taken){const pr=String(name||"").trim().split(/\s+/),sur=translit(pr[0]),ini=translit(pr.slice(1).join(""));
+ let b=(sur+(ini?"."+ini:"")).replace(/^\.+|\.+$/g,"").slice(0,26)||"user";if(b.length<3)b+="1";let l=b,n=2;while(taken.has(l))l=b+n++;taken.add(l);return l}
+const genPw=()=>{const c="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";return[...crypto.getRandomValues(new Uint32Array(10))].map(x=>c[x%c.length]).join("")};
+let bk=[];
+function renderBk(){
+ if(!bk.length){$("bkout").innerHTML="";return}
+ const ok=bk.filter(r=>r.ok).length,todo=bk.filter(r=>!r.ok&&!r.bad).length;
+ $("bkout").innerHTML=`<div style="overflow-x:auto"><table><tr><th>#</th><th>Ф.И.О.</th><th>Цех</th><th>Смена</th><th>Должность</th><th>Логин</th><th>Пароль</th><th></th></tr>${bk.map((r,i)=>`<tr data-i="${i}"><td>${i+1}</td><td>${esc(r.name)}</td><td>${esc(r.dept||"—")}</td><td>${esc(r.team||"—")}</td><td>${esc(r.pos||"—")}</td>
+ <td><input data-k="login" value="${esc(r.login)}"${r.ok||r.bad?" disabled":""} style="width:150px"></td><td><input data-k="pw" value="${esc(r.pw)}"${r.ok||r.bad?" disabled":""} style="width:120px"></td><td class="${r.ok?"":"warn"}">${r.ok?"✓":esc(r.err||"")}</td></tr>`).join("")}</table></div>
+ <div class="g">${todo?`<button id="bkgo" type="button"><span>Создать аккаунты</span> (${todo})</button>`:""}${ok?`<button class="ghost" id="bkcp" type="button">Скопировать список</button><button class="ghost" id="bkcsv" type="button">Скачать CSV</button>`:""}</div>
+ ${ok?`<p class="hint"><span>Сохраните список: пароли потом не показываются.</span></p>`:""}`}
+$("bkp").onclick=()=>{
+ const ds=depts.length?depts:DEPT,find=(a,v)=>a.find(x=>x.toLowerCase()===v.toLowerCase()),taken=new Set(Object.values(LOGINS));
+ bk=$("bkt").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const p=l.split(/[;\t]/).map(x=>x.trim()),r={name:p[0],dept:p[1]||"",team:p[2]||"",pos:p[3]||"",err:""};
+  if(r.dept){const f=find(ds,r.dept);if(f)r.dept=f;else r.err="нет такого цеха"}
+  if(r.team){const f=find(teams,r.team);if(f)r.team=f;else r.err=r.err||"нет такой смены"}
+  if(r.pos){const f=find(P(),r.pos);if(f)r.pos=f;else r.err=r.err||"нет такой должности"}
+  r.bad=!!r.err;r.login=mkLogin(r.name,taken);r.pw=genPw();return r});
+ renderBk()};
+$("bkout").oninput=e=>{const row=e.target.closest("tr");if(row&&e.target.dataset.k)bk[+row.dataset.i][e.target.dataset.k]=e.target.value.trim()};
+$("bkout").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.id==="bkgo")safe(async()=>{b.disabled=true;
+  for(const r of bk){if(r.ok||r.bad)continue;
+   if(!/^[a-z0-9._-]{3,30}$/i.test(r.login)){r.err="логин: латиница, 3–30 символов";continue}
+   if((r.pw||"").length<6){r.err="пароль короче 6 символов";continue}
+   try{await fnCall({action:"create",login:r.login.toLowerCase(),password:r.pw,name:r.name,dept_id:dId(r.dept),team:r.team||null,position:r.pos||null});r.ok=true;r.err=""}catch(x){r.err=String(x.message||x)}
+   renderBk()}
+  await reload("profiles");loadLogins();renderBk()});
+ else if(b.id==="bkcp")navigator.clipboard.writeText(bk.filter(r=>r.ok).map(r=>[r.name,r.login,r.pw].join("\t")).join("\n")).then(()=>toast("Скопировано"));
+ else if(b.id==="bkcsv"){const t="\ufeffФ.И.О.;Логин;Пароль\n"+bk.filter(r=>r.ok).map(r=>[r.name,r.login,r.pw].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(";")).join("\n"),a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download="accounts.csv";a.click()}};
 $("users").onclick=e=>{const k=e.target.closest("[data-pw]");
  if(k){const id=k.closest("tr").dataset.u,p=prompt(tr("Новый пароль для")+" "+((prof[id]||{}).name||""));if(p==null)return;
   if(p.length<6)return toast("Пароль должен быть не короче 6 символов");safe(async()=>{await fnCall({action:"password",id,password:p});toast("Пароль изменён.")});return}
@@ -765,6 +831,7 @@ $("ps").onclick=()=>safe(async()=>{await db.doc("config/positions").set({list:$(
 let jEd=null;
 $("jcs").innerHTML=COLORS.map(c=>`<span class="ink" data-c="${c}" style="background:${c}"></span>`).join(" ");
 $("jcs").onclick=e=>{if(e.target.dataset.c)$("jcol").value=e.target.dataset.c};
+const sdate=ts=>{const d=new Date(ts||Date.now()),y=siteYear();if(y)d.setFullYear(y);return`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${String(d.getFullYear()).slice(-2)}`};
 const KINDS={
  oper:{n:"Оперативный журнал",t:"ОПЕРАТИВНЫЙ ЖУРНАЛ",h:["Дата и время записи", "Содержание записей в течение смены, о сдаче и приёмке смены", "Визы, замечания и распоряжения"],f:[]},
  switch:{n:"Журнал оперативных переключений",t:"ЖУРНАЛ ОПЕРАТИВНЫХ ПЕРЕКЛЮЧЕНИЙ",h:["Дата и время", "Объект, операция, № распоряжения (бланка переключений)", "Визы, замечания и распоряжения"],f:["Объект / присоединение", "Операция (включено, отключено, …)", "№ распоряжения / бланка переключений", "Распоряжение дал / принял"]},
@@ -784,16 +851,27 @@ const jKind=()=>{const k=$("jkind").value||"oper",old=jEd&&(jrs.find(x=>x.id===j
 function openJ(id){if(!isOwner)return;jEd=id;const j=id?jrs.find(x=>x.id===id):null,ds=depts.length?depts:DEPT;
  $("jdt").textContent=j?"Настройки журнала":"Новый журнал";
  $("jdp").innerHTML=ds.map(d=>`<option>${esc(d)}</option>`).join("");
- $("jkind").innerHTML=Object.keys(KINDS).map(k=>`<option value="${k}">${KINDS[k].n}</option>`).join("");$("jkind").value=j&&KINDS[j.kind]?j.kind:"oper";
+ $("jkind").innerHTML=Object.keys(KINDS).map((k,i)=>`<option value="${k}">${i}. ${tr(KINDS[k].n)}</option>`).join("");$("jkind").value=j&&KINDS[j.kind]?j.kind:"oper";
+ $("joff").checked=!!(j&&j.offshift);$("joff").disabled=!!j;
  $("jn").value=j?j.name||"":"ОПЕРАТИВНЫЙ ЖУРНАЛ";$("jdp").value=j?.dept||(dept!=="*"?dept:ds[0]);$("jpg").value=j?.pages||100;
  $("tinv").value=j?.inv||"";$("tunit").value=j?.unit||"";$("tst").value=j?.start||"";$("ten").value=j?.end||"";$("jcol").value=j?.color||COLORS[0];
  $("jdel").hidden=!j;$("jsb").innerHTML=`<option value="">— без подписи —</option>`+Object.keys(prof).map(i=>`<option value="${i}">${esc(prof[i].name)}</option>`).join("");$("jsb").value=j?.signBy||"";posBox("jrp",j&&j.readPos);posBox("jep",j&&j.editPos);$("jd").showModal()}
-const posBox=(id,sel)=>{$(id).innerHTML=P().map(x=>`<label class="chk"><input type="checkbox" value="${esc(x)}"${(sel||[]).includes(x)?" checked":""}> ${esc(x)}</label>`).join("")||`<span class="hint">Сначала добавьте должности в «Управлении».</span>`};
+const posBox=(id,sel)=>{const box=$(id),ps=P();
+ if(!ps.length){box.innerHTML=`<span class="hint">Сначала добавьте должности в «Управлении».</span>`;return}
+ box.innerHTML=`<div class="pp"><div class="g"><input class="pps" placeholder="Поиск должности…" style="flex:1;min-width:160px"><button type="button" class="ghost" data-a="all">Все</button><button type="button" class="ghost" data-a="none">Никого</button></div><div class="ppsel"></div><div class="ppl">${ps.map((x,i)=>`<label class="chk" data-q="${esc(x.toLowerCase())}"><input type="checkbox" value="${esc(x)}"${(sel||[]).includes(x)?" checked":""}> <span class="hint">${i}</span> ${esc(x)}</label>`).join("")}</div></div>`;
+ const upd=()=>{const on=[...box.querySelectorAll(".ppl input:checked")].map(i=>i.value);box.querySelector(".ppsel").innerHTML=on.length?on.map(x=>`<span class="chip2">${esc(x)} <a href="#" data-x="${esc(x)}" style="text-decoration:none">✕</a></span>`).join(" "):`<span class="hint">Никто не выбран</span>`};
+ box.oninput=e=>{if(e.target.classList.contains("pps")){const q=e.target.value.trim().toLowerCase();box.querySelectorAll(".ppl label").forEach(l=>l.style.display=!q||l.dataset.q.includes(q)?"":"none")}};
+ box.onchange=e=>{if(e.target.type==="checkbox")upd()};
+ box.onclick=e=>{const a=e.target.closest("[data-a]");if(a){box.querySelectorAll(".ppl label").forEach(l=>{if(l.style.display!=="none")l.querySelector("input").checked=a.dataset.a==="all"});upd();return}
+  const x=e.target.closest("[data-x]");if(x){e.preventDefault();const i=[...box.querySelectorAll(".ppl input")].find(i=>i.value===x.dataset.x);if(i)i.checked=false;upd()}};
+ upd()};
 const pickPos=id=>[...$(id).querySelectorAll("input:checked")].map(i=>i.value);
-const jData=()=>({readPos:pickPos("jrp"),editPos:pickPos("jep"),name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value,...jKind()});
+const jData=()=>({readPos:pickPos("jrp"),editPos:pickPos("jep"),name:$("jn").value.trim()||"Журнал",dept:$("jdp").value,pages:Math.max(1,Math.min(500,+$("jpg").value||100)),inv:$("tinv").value.trim(),unit:$("tunit").value.trim(),start:$("tst").value.trim(),end:$("ten").value.trim(),color:$("jcol").value,signBy:$("jsb").value,...jKind(),...($("joff").checked?{offshift:true}:{})});
 $("jkind").onchange=()=>{const n=$("jn").value.trim();if(!n||Object.values(KINDS).some(x=>x.t===n))$("jn").value=KINDS[$("jkind").value].t};
 $("jsv").onclick=()=>safe(async()=>{if(jEd)await db.doc("journals/"+jEd).update(jData());
- else await db.doc("journals/"+(jrs.length?"j"+Date.now():"main")).set({...jData(),createdAt:Date.now(),by:uid});$("jd").close()});
+ else{const jid=jrs.length?"j"+Date.now():"main",dd=jData();await db.doc("journals/"+jid).set({...dd,createdAt:Date.now(),by:uid});
+  if(dd.offshift){const n=siteNow();await db.doc("shifts/s"+Date.now()).set({d:pad(n.getDate()),m:pad(n.getMonth()+1),y:String(n.getFullYear()).slice(-2),num:"0",fh:0,fm:0,uh:0,um:0,crew:[],team:"",j:jid,ink:0,by:uid,createdAt:Date.now()})}}
+ $("jd").close()});
 let jdf;$("jdel").onclick=()=>safe(async()=>{
  if(!jdf){$("jdel").textContent="Точно удалить журнал?";jdf=setTimeout(()=>{jdf=0;$("jdel").textContent="Удалить журнал"},4000);return}
  clearTimeout(jdf);jdf=0;$("jdel").textContent="Удалить журнал";await db.doc("journals/"+jEd).delete();if(curJ===jEd)curJ=null;$("jd").close()});
@@ -830,7 +908,7 @@ function renderLib(){
  const ds=depts.length?depts:DEPT;
  $("depts").innerHTML=["*",...ds].map(d=>`<button class="chip ${d===dept?"on":"ghost"}" data-d="${esc(d)}">${d==="*"?"Все":esc(d)}</button>`).join("");
  const l=jrs.filter(j=>dept==="*"||j.dept===dept).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
- $("shelf").innerHTML=l.length?l.map(j=>`<div class="jc" data-j="${j.id}" style="${cbg(j.color)}">${isOwner?'<button class="gear">⚙</button>':""}<b>${esc(j.name||"Журнал")}</b><div class="lb">Инв. № ${esc(j.inv||"—")}<br>Страниц: ${+j.pages||100}<br><span>Фактическая смена:</span> <b>${esc(factTeam(j.id)||"—")}</b></div></div>`).join(""):`<p class="hint">В этом подразделении пока нет журналов.</p>`;
+ $("shelf").innerHTML=l.length?l.map(j=>`<div class="jc" data-j="${j.id}" style="${cbg(j.color)}">${isOwner?'<button class="gear">⚙</button>':""}<b>${esc(j.name||"Журнал")}</b><div class="lb">Инв. № ${esc(j.inv||"—")}<br>Страниц: ${+j.pages||100}<br>${j.offshift?"<span>Журнал вне смены</span>":`<span>Фактическая смена:</span> <b>${esc(factTeam(j.id)||"—")}</b>`}</div></div>`).join(""):`<p class="hint">В этом подразделении пока нет журналов.</p>`;
 }
 $("depts").onclick=e=>{const b=e.target.closest("[data-d]");if(b){dept=b.dataset.d;renderLib()}};
 $("shelf").onclick=e=>{const c=e.target.closest(".jc");if(!c)return;if(e.target.closest(".gear"))return openJ(c.dataset.j);curJ=c.dataset.j;closed=true;pg=1;pickAt=null;all()};
@@ -855,8 +933,8 @@ const all=()=>{
  J=jrs.find(x=>x.id===curJ)||{};title=J;
  shifts=allS.filter(x=>(x.j||"main")===curJ);entries=allE.filter(x=>(x.j||"main")===curJ);
  renderBar();curJ?renderBook():renderLib();renderUsers();
- $("lib").hidden=!!curJ||tab!=="j";$("sched").hidden=!!curJ||tab!=="c";$("roster").hidden=!!curJ||tab!=="s";$("docs").hidden=!!curJ||tab!=="d";document.body.classList.remove("wide");if(tab!=="d")$("docs").dataset.r="";$("big").hidden=!!curJ;$("tabs").hidden=!!curJ;
- $("tabJ").classList.toggle("ghost",tab!=="j");$("tabC").classList.toggle("ghost",tab!=="c");$("tabS").classList.toggle("ghost",tab!=="s");$("tabD").classList.toggle("ghost",tab!=="d");
+ $("lib").hidden=!!curJ||tab!=="j";$("sched").hidden=!!curJ||tab!=="c";$("roster").hidden=!!curJ||tab!=="s";$("docs").hidden=!!curJ||tab!=="d";$("accts").hidden=!!curJ||tab!=="a"||!isOwner;document.body.classList.remove("wide");if(tab!=="d")$("docs").dataset.r="";$("big").hidden=!!curJ;$("tabs").hidden=!!curJ;
+ $("tabJ").classList.toggle("ghost",tab!=="j");$("tabC").classList.toggle("ghost",tab!=="c");$("tabS").classList.toggle("ghost",tab!=="s");$("tabD").classList.toggle("ghost",tab!=="d");$("tabA").hidden=!isOwner;$("tabA").classList.toggle("ghost",tab!=="a");
  renderBig();renderPres();
  if(!curJ&&tab==="c"&&!(sdraft&&$("sched").contains(document.activeElement)))renderSched();
  if(!curJ&&tab==="s"&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster();
@@ -871,7 +949,7 @@ const g_=o=>o||{};
 const MAP={
  profiles:r=>({name:r.full_name,sig:r.signature,sigs:(r.signatures&&r.signatures.length)?r.signatures:(r.signature?[r.signature]:[]),createdAt:tsn(r.created_at),font:r.font,avatar:r.avatar,about:r.about||"",exp:r.experience,discord:r.discord||"",team:r.team||"",deptId:r.dept_id,dept:dName(r.dept_id)||""}),
  roles:r=>({position:r.position||"",approved:!!r.approved||r.role==="owner"}),
- journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",kind:r.kind||"",readPos:r.read_pos||[],editPos:r.edit_pos||[],createdAt:tsn(r.created_at),by:r.created_by}),
+ journals:r=>({deptId:r.dept_id,name:r.name,dept:dName(r.dept_id)||"",pages:r.pages,inv:r.inv||"",unit:r.unit||"",start:r.started||"",end:r.ended||"",color:r.color,signBy:r.sign_by||"",kind:r.kind||"",offshift:!!r.offshift,readPos:r.read_pos||[],editPos:r.edit_pos||[],createdAt:tsn(r.created_at),by:r.created_by}),
  shifts:r=>({team:r.team,j:r.journal_id,d:r.d,m:r.m,y:r.y,num:r.num,fh:r.fh,fm:r.fm,uh:r.uh,um:r.um,crew:r.crew||[],ink:r.ink,at:r.at_row,by:r.created_by,createdAt:tsn(r.created_at),closed:r.closed,
   handBy:r.hand_by,handName:r.hand_name,handLabel:r.hand_label,handInk:r.hand_ink,handSgV:g_(r.hand_sg).v,handSgS:g_(r.hand_sg).s,handSgX:g_(r.hand_sg).x,handSgY:g_(r.hand_sg).y,handNoSg:g_(r.hand_sg).nosg,
   accBy:r.acc_by,accName:r.acc_name,accLabel:r.acc_label,accInk:r.acc_ink,accTime:r.acc_at,accSgV:g_(r.acc_sg).v,accSgS:g_(r.acc_sg).s,accSgX:g_(r.acc_sg).x,accSgY:g_(r.acc_sg).y,accNoSg:g_(r.acc_sg).nosg}),
@@ -891,7 +969,7 @@ const loadAll=()=>Promise.all(Object.keys(ORD).map(t=>fetchAll(t).then(r=>RAW[t]
 async function reload(t){RAW[t]=await fetchAll(t);AFFECT[t].forEach(k=>emit(k))}
 const fail=e=>{if(e)throw new Error(e.message||e.code)};
 const ROW={
- journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended",kind:"kind"};
+ journals:o=>{const r={},m={name:"name",pages:"pages",inv:"inv",unit:"unit",color:"color",start:"started",end:"ended",kind:"kind",offshift:"offshift"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("dept"in o)r.dept_id=dId(o.dept);if("signBy"in o)r.sign_by=o.signBy||null;if("readPos"in o)r.read_pos=o.readPos||[];if("editPos"in o)r.edit_pos=o.editPos||[];return r},
  shifts:(o,cur)=>{const r={},m={team:"team",d:"d",m:"m",y:"y",num:"num",fm:"fm",um:"um",crew:"crew",ink:"ink",j:"journal_id",by:"created_by",at:"at_row",closed:"closed",handBy:"hand_by",handName:"hand_name",handLabel:"hand_label",handInk:"hand_ink",accBy:"acc_by",accName:"acc_name",accLabel:"acc_label",accInk:"acc_ink"};
   for(const k in o)if(m[k])r[m[k]]=o[k];if("fh"in o)r.fh=+o.fh;if("uh"in o)r.uh=+o.uh;if("accTime"in o)r.acc_at=new Date().toISOString();
@@ -1087,6 +1165,8 @@ Object.assign(TRD.uk,{"Тип журнала:":"Тип журналу:","Опе�
 Object.assign(TRD.en,{"Тип журнала:":"Journal type:","Оперативный журнал":"Operations log","Журнал учёта":"Accounting log","Журнал правонарушений":"Violations log","Журнал измерений":"Measurements log"});
 Object.assign(TRD.uk,{"Журнал оперативных переключений": "Журнал оперативних перемикань", "Журнал дефектов и неисправностей оборудования": "Журнал дефектів і несправностей обладнання", "Журнал нарядов-допусков и распоряжений": "Журнал нарядів-допусків і розпоряджень", "Журнал дозиметрического контроля": "Журнал дозиметричного контролю", "Журнал инструктажей по охране труда": "Журнал інструктажів з охорони праці", "Журнал противоаварийных и противопожарных тренировок": "Журнал протиаварійних і протипожежних тренувань", "Журнал учёта ремонтных работ": "Журнал обліку ремонтних робіт", "Журнал учёта средств защиты и ключей": "Журнал обліку засобів захисту та ключів", "Журнал производственных травм и несчастных случаев": "Журнал виробничих травм і нещасних випадків", "Журнал проверки знаний": "Журнал перевірки знань", "Дополнительно (необязательно):": "Додатково (необов'язково):"});
 Object.assign(TRD.en,{"Журнал оперативных переключений": "Operational switching log", "Журнал дефектов и неисправностей оборудования": "Equipment defects and faults log", "Журнал нарядов-допусков и распоряжений": "Work permits and orders log", "Журнал дозиметрического контроля": "Dosimetry control log", "Журнал инструктажей по охране труда": "Safety briefing log", "Журнал противоаварийных и противопожарных тренировок": "Emergency and fire drills log", "Журнал учёта ремонтных работ": "Repair work log", "Журнал учёта средств защиты и ключей": "Protective equipment and keys log", "Журнал производственных травм и несчастных случаев": "Workplace injuries and accidents log", "Журнал проверки знаний": "Knowledge testing log", "Дополнительно (необязательно):": "Additional (optional):"});
+Object.assign(TRD.uk,{"Аккаунты": "Акаунти", "Пользователи": "Користувачі", "Массовое создание аккаунтов": "Масове створення акаунтів", "Один аккаунт": "Один акаунт", "Каждая строка — один человек:": "Кожен рядок — одна людина:", "Цех, смена и должность не обязательны.": "Цех, зміна й посада не обов'язкові.", "Разделитель «;» или Tab (можно вставлять из Excel). Логины и пароли создаются автоматически.": "Роздільник «;» або Tab (можна вставляти з Excel). Логіни й паролі створюються автоматично.", "Подготовить список": "Підготувати список", "Создать аккаунты": "Створити акаунти", "Скопировать список": "Скопіювати список", "Скачать CSV": "Завантажити CSV", "Сохраните список: пароли потом не показываются.": "Збережіть список: паролі потім не показуються.", "Найдено:": "Знайдено:", "Показать ещё": "Показати ще", "ожидают подтверждения": "очікують підтвердження", "— все цеха —": "— усі цехи —", "— все смены —": "— усі зміни —", "— все должности —": "— усі посади —", "Поиск по имени или логину…": "Пошук за іменем або логіном…", "Поиск должности…": "Пошук посади…", "Никого": "Нікого", "Никто не выбран": "Ніхто не вибраний", "Журнал вне смены (для неоперативного персонала)": "Журнал поза зміною (для неоперативного персоналу)", "Журнал вне смены": "Журнал поза зміною", "только владелец": "лише власник", "Писать в этот журнал могут только владелец и должности, указанные в настройках журнала.": "Писати в цей журнал можуть лише власник і посади, зазначені в налаштуваннях журналу.", "нет такого цеха": "немає такого цеху", "нет такой смены": "немає такої зміни", "нет такой должности": "немає такої посади", "Никого не найдено.": "Нікого не знайдено."});
+Object.assign(TRD.en,{"Аккаунты": "Accounts", "Пользователи": "Users", "Массовое создание аккаунтов": "Bulk account creation", "Один аккаунт": "Single account", "Каждая строка — один человек:": "One person per line:", "Цех, смена и должность не обязательны.": "Shop, shift and position are optional.", "Разделитель «;» или Tab (можно вставлять из Excel). Логины и пароли создаются автоматически.": "Separator “;” or Tab (you can paste from Excel). Logins and passwords are generated automatically.", "Подготовить список": "Prepare list", "Создать аккаунты": "Create accounts", "Скопировать список": "Copy list", "Скачать CSV": "Download CSV", "Сохраните список: пароли потом не показываются.": "Save the list: passwords are not shown later.", "Найдено:": "Found:", "Показать ещё": "Show more", "ожидают подтверждения": "awaiting approval", "— все цеха —": "— all shops —", "— все смены —": "— all shifts —", "— все должности —": "— all positions —", "Поиск по имени или логину…": "Search by name or login…", "Поиск должности…": "Search position…", "Никого": "None", "Никто не выбран": "Nobody selected", "Журнал вне смены (для неоперативного персонала)": "Off-shift log (for non-operational staff)", "Журнал вне смены": "Off-shift log", "только владелец": "owner only", "Писать в этот журнал могут только владелец и должности, указанные в настройках журнала.": "Only the owner and the positions set in the log settings can write in this log.", "нет такого цеха": "no such shop", "нет такой смены": "no such shift", "нет такой должности": "no such position", "Никого не найдено.": "Nobody found."});
 const TRP=[
 [/^Журнал заполнен \((\d+) стр\.\)$/,{uk:"Журнал заповнено ($1 стор.)",en:"Journal is full ($1 pages)"}],
 [/^Журнал заполнен: записи вышли за (\d+) страниц\.$/,{uk:"Журнал заповнено: записи вийшли за $1 сторінок.",en:"Journal is full: entries exceed $1 pages."}],
