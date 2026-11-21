@@ -23,6 +23,7 @@ select,input,textarea{padding:6px;border:1px solid #b9ad97;border-radius:6px;bac
 #big{text-align:center;padding:14px}.bigt{font-size:clamp(22px,5vw,44px);font-weight:800;letter-spacing:1px}.bigt b{font-size:1.3em;color:var(--acc)}
 .sw{overflow-x:auto}.st{border-collapse:collapse;margin:12px 0;min-width:100%}.st th,.st td{border:1px solid #8886;padding:4px 8px}.st th.zone{text-align:left;background:#8882}.st .cur{background:#e0b46c55}.st input{width:100%;min-width:110px}
 .warn{color:#b3261e}
+.rclk{position:fixed;right:10px;bottom:8px;z-index:20;font-size:12px;background:var(--card);border:1px solid #8886;border-radius:8px;padding:4px 10px;opacity:.92}
 .chk{display:inline-flex;gap:4px;align-items:center;margin-right:10px}
 body.wide main{max-width:none;padding:12px 8px}
 #roster .sw{overflow-x:auto}
@@ -185,6 +186,7 @@ label.r{display:flex;gap:8px;align-items:center;margin:4px 0}label.r input[type=
  <p><b>Год сайта</b> (фактическое время с другим годом)</p>
  <div class="g"><input id="syr" class="n" type="number" min="1900" max="2200" placeholder="1986"><button id="ssv3">Сохранить год</button><button class="ghost" id="srs">Сбросить (реальный год)</button></div>
  <p class="hint"><span>Сейчас на сайте:</span> <b id="sinfo"></b></p>
+ <p class="warn" id="serr"></p>
  <p><b>Подразделения (цеха)</b> (каждое с новой строки)</p>
  <textarea id="dl" rows="4" style="width:100%"></textarea>
  <div class="g"><button id="dsv">Сохранить подразделения</button></div>
@@ -325,10 +327,13 @@ $("rsv").onclick=()=>safe(async()=>{const team=$("rteam").value;if(!team)return 
  const mode=document.querySelector("input[name=rmode]:checked").value;
  await db.doc("config/rule").set({mode,manualTeam:team,anchorTeam:team,anchorAt:siteNow().getTime(),times:$("rtimes").value.trim()});$("rd").close();toast("Смены сохранены")});
 let tab="j",sdraft=null;
-async function setYear(y){const t=(schedInfo()||{}).team;await db.doc("config/site").set({year:y});
- rY=siteNow().getFullYear();rM=siteNow().getMonth();
- if(shRule.mode==="auto"&&t)await db.doc("config/rule").set({...shRule,anchorTeam:t,anchorAt:siteNow().getTime()});
- $("syr").value=y||"";$("sinfo").textContent=siteNow().toLocaleDateString(locOf());toast("Год сайта сохранён");all()}
+async function setYear(y){$("serr").textContent="";
+ try{const t=(schedInfo()||{}).team;await db.doc("config/site").set({year:y});
+  if((siteYear()||null)!==(y||null))throw new Error("настройка не применилась");
+  rY=siteNow().getFullYear();rM=siteNow().getMonth();
+  if(shRule.mode==="auto"&&t)await db.doc("config/rule").set({...shRule,anchorTeam:t,anchorAt:siteNow().getTime()});
+  $("syr").value=y||"";$("sinfo").textContent=siteNow().toLocaleDateString(locOf());tickClock();toast("Год сайта сохранён");all()}
+ catch(e){$("serr").textContent="Не удалось сохранить: "+(e.message||e)+". Выполните all_patches.sql в Supabase (SQL Editor).";throw e}}
 $("ssv3").onclick=()=>safe(async()=>{const y=+$("syr").value;if(!(y>=1900&&y<=2200))return toast("Укажите год от 1900 до 2200");await setYear(y)});
 $("srs").onclick=()=>safe(async()=>{await setYear(null)});
 function renderSched(){
@@ -356,17 +361,18 @@ const setOf=k=>{const r=(RAW.settings||[]).find(x=>x.key===k);return r&&r.value?
 const rosterOf=()=>setOf("roster:"+ymKey()).cells||{};
 const slotList=()=>{const a=setOf("roster_slots").slots;return a&&a.length?a:["00:00–08:00","08:00–16:00","16:00–24:00"]};
 const locOf=()=>LANG==="ru"?"ru-RU":LANG==="uk"?"uk-UA":"en-GB";
+let rParts=3;try{rParts=+localStorage.getItem("rParts")===2?2:3}catch(e){}
 function renderRoster(){
  const days=new Date(rY,rM+1,0).getDate(),sl=edit0()&&rSlots?rSlots:slotList(),n=sl.length,cols=teams,edit=edit0(),cells=edit?rDraft:rosterOf(),loc=locOf(),now=siteNow();
  const isNow=now.getFullYear()===rY&&now.getMonth()===rM,cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
- let h=`<div class="g"><button id="rprev"${edit?" disabled":""}>◀</button><select id="rmon"${edit?" disabled":""}>${Array.from({length:12},(_,i)=>`<option value="${i}"${i===rM?" selected":""}>${esc(cap(new Date(2000,i,1).toLocaleDateString(loc,{month:"long"})))}</option>`).join("")}</select><input id="ryear" class="n" type="number" min="1900" max="2200" value="${rY}"${edit?" disabled":""}><button id="rnext"${edit?" disabled":""}>▶</button>`+
+ let h=`<div class="g"><button id="rprev"${edit?" disabled":""}>◀</button><select id="rmon"${edit?" disabled":""}>${Array.from({length:12},(_,i)=>`<option value="${i}"${i===rM?" selected":""}>${esc(cap(new Date(2000,i,1).toLocaleDateString(loc,{month:"long"})))}</option>`).join("")}</select><input id="ryear" class="n" type="number" min="1900" max="2200" value="${rY}"${edit?" disabled":""}><button id="rnext"${edit?" disabled":""}>▶</button><span class="hint" style="margin-left:10px">Частей:</span><button id="rp2" class="${rParts===2?"":"ghost"}">2</button><button id="rp3" class="${rParts===3?"":"ghost"}">3</button>`+
   (isOwner?(edit?`<button id="rsave">Сохранить график</button><button class="ghost" id="rcan">Отмена</button>`:`<button id="redit">✎ Редактировать график</button>`):"")+`</div>`;
  if(edit)h+=`<div class="g"><span>Время смен:</span><input id="rslots" value="${esc(sl.join(", "))}" style="flex:1;min-width:260px"></div>`;
  if(!cols.length)h+=`<p class="hint">Сначала добавьте смены (бригады) в окне «Управление».</p>`;
  const wk=d=>{const w=new Date(rY,rM,d).getDay();return w===0||w===6},td=d=>isNow&&d===now.getDate();
  // сколько частей нужно, чтобы весь месяц поместился в ширину окна без прокрутки
  const avail=Math.max(280,$("roster").clientWidth||innerWidth-16),lab=86,cw=11;
- let parts=1;while(parts<8&&lab+Math.ceil(days/parts)*n*cw>avail)parts++;
+ let parts=rParts;while(parts<8&&lab+Math.ceil(days/parts)*n*cw>avail)parts++;
  const per=Math.ceil(days/parts);
  for(let pi=0;pi<parts;pi++){
   const from=pi*per+1,to=Math.min(days,(pi+1)*per);if(from>days)break;
@@ -377,6 +383,7 @@ function renderRoster(){
   cols.forEach(t=>{h+=`<tr><th class="tn"><span>Смена №</span>${esc(t)}</th>${D.map(d=>sl.map((x,k)=>{const key=t+"|"+d+"|"+k,v=cells[key]||"";return`<td class="${td(d)?"today":""}">${edit?`<input class="cl" maxlength="3" data-k="${esc(key)}" value="${esc(v)}">`:esc(v)}</td>`}).join("")).join("")}</tr>`});
   h+=`</tbody></table></div>`}
  $("roster").innerHTML=h}
+$("roster").addEventListener("click",e=>{const b=e.target.closest("#rp2,#rp3");if(!b)return;rParts=b.id==="rp2"?2:3;try{localStorage.setItem("rParts",rParts)}catch(x){}renderRoster()});
 let rzT=null;addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!$("roster").hidden&&!(rDraft&&$("roster").contains(document.activeElement)))renderRoster()},200)});
 const edit0=()=>isOwner&&!!rDraft;
 $("roster").oninput=e=>{if(!rDraft)return;const k=e.target.dataset.k;if(!k)return;const v=e.target.value.trim();if(v)rDraft[k]=v;else delete rDraft[k]};
@@ -395,6 +402,7 @@ $("roster").onclick=e=>{const b=e.target.closest("button");if(!b)return;
 function tickClock(){const d=siteNow(),loc=locOf(),t=d.toLocaleTimeString(loc,{hour12:false}),c=$("clk");
  if(c)c.innerHTML=`<b>${t}</b><div class="hint">${esc(d.toLocaleDateString(loc,{weekday:"long",day:"numeric",month:"long",year:"numeric"}))}</div>`;
  const c2=$("clk2");if(c2)c2.textContent=`🕒 ${t} · ${d.toLocaleDateString(loc)}`;
+ const rc=$("rclk");if(rc){const n=new Date();rc.textContent=n.toLocaleTimeString(loc,{hour12:false})+" · "+n.toLocaleDateString(loc)}
  const y=$("yrb"),sy=siteYear();if(y)y.textContent=sy?`📅 ${sy}`:""}
 setInterval(tickClock,1000);
 $("tabJ").onclick=()=>{tab="j";all()};$("tabC").onclick=()=>{tab="c";all()};$("tabS").onclick=()=>{tab="s";all()};$("tabD").onclick=()=>{tab="d";all()};
@@ -934,6 +942,7 @@ uk:{
 "Мои подписи":"Мої підписи","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Можна до трьох підписів: при підписанні один з них обирається випадково.",
 "Документы":"Документи","Загрузить PDF":"Завантажити PDF","Название документа":"Назва документа","Открыть":"Відкрити","Открыть в новой вкладке":"Відкрити в новій вкладці","Скачать":"Завантажити","Закрыть документ":"Закрити документ","Документов пока нет.":"Документів поки немає.","Выберите PDF-файл":"Оберіть PDF-файл","Документ загружен":"Документ завантажено","Документ удалён":"Документ видалено","Файл слишком большой (максимум 20 МБ)":"Файл завеликий (максимум 20 МБ)","Только файлы PDF":"Лише файли PDF","Удалить документ?":"Видалити документ?","⬇ PDF":"⬇ PDF","Год сайта":"Рік сайту","(фактическое время с другим годом)":"(фактичний час з іншим роком)","Сохранить год":"Зберегти рік","Сбросить (реальный год)":"Скинути (справжній рік)","Год сайта сохранён":"Рік сайту збережено","Укажите год от 1900 до 2200":"Вкажіть рік від 1900 до 2200","Сейчас на сайте:":"Зараз на сайті:","Не удалось загрузить библиотеку PDF":"Не вдалося завантажити бібліотеку PDF",
 "Кто может читать журнал":"Хто може читати журнал","(пусто — все подтверждённые)":"(порожньо — усі підтверджені)","Кто может редактировать (только на своей смене)":"Хто може редагувати (лише на своїй зміні)","(пусто — любая должность)":"(порожньо — будь-яка посада)","Сначала добавьте должности в «Управлении».":"Спершу додайте посади в «Керуванні».","Ваша должность не имеет права редактировать этот журнал.":"Ваша посада не має права редагувати цей журнал.","Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":"Зміну здано: ви можете лише переглядати журнал, доки до вашої бригади не дійде зміна.",
+"Реальное время:":"Реальний час:","Частей:":"Частин:",
 "Ошибка связи с базой: ":"Помилка зв'язку з базою: "
 },
 en:{
@@ -975,6 +984,7 @@ en:{
 "Мои подписи":"My signatures","Можно до трёх подписей: при подписании одна из них выбирается случайно.":"Up to three signatures: one of them is picked at random when you sign.",
 "Документы":"Documents","Загрузить PDF":"Upload PDF","Название документа":"Document title","Открыть":"Open","Открыть в новой вкладке":"Open in a new tab","Скачать":"Download","Закрыть документ":"Close document","Документов пока нет.":"No documents yet.","Выберите PDF-файл":"Choose a PDF file","Документ загружен":"Document uploaded","Документ удалён":"Document deleted","Файл слишком большой (максимум 20 МБ)":"File is too large (20 MB max)","Только файлы PDF":"PDF files only","Удалить документ?":"Delete this document?","⬇ PDF":"⬇ PDF","Год сайта":"Site year","(фактическое время с другим годом)":"(real time with a different year)","Сохранить год":"Save year","Сбросить (реальный год)":"Reset (real year)","Год сайта сохранён":"Site year saved","Укажите год от 1900 до 2200":"Enter a year from 1900 to 2200","Сейчас на сайте:":"Now on the site:","Не удалось загрузить библиотеку PDF":"Could not load the PDF library",
 "Кто может читать журнал":"Who can read the journal","(пусто — все подтверждённые)":"(empty — all approved users)","Кто может редактировать (только на своей смене)":"Who can edit (only on their own shift)","(пусто — любая должность)":"(empty — any position)","Сначала добавьте должности в «Управлении».":"First add positions in “Management”.","Ваша должность не имеет права редактировать этот журнал.":"Your position is not allowed to edit this journal.","Смена сдана: вы можете только просматривать журнал, пока до вашей бригады не дойдёт смена.":"The shift has been handed over: you can only view the journal until your team's shift comes.",
+"Реальное время:":"Real time:","Частей:":"Parts:",
 "Ошибка связи с базой: ":"Database connection error: "
 }};
 const TRP=[
@@ -989,6 +999,7 @@ const TRP=[
 [/^Страниц: (\d+)$/,{uk:"Сторінок: $1",en:"Pages: $1"}],
 [/^Смена №(.*) от (.*)$/,{uk:"Зміна №$1 від $2",en:"Shift #$1 of $2"}],
 [/^Режим просмотра: писать могут только пользователи текущей смены \((.*)\)\.$/,{uk:"Режим перегляду: писати можуть лише користувачі поточної зміни ($1).",en:"View-only mode: only users of the current shift ($1) can write."}],
+[/^Не удалось сохранить: (.*)\. Выполните all_patches\.sql в Supabase \(SQL Editor\)\.$/,{uk:"Не вдалося зберегти: $1. Виконайте all_patches.sql у Supabase (SQL Editor).",en:"Could not save: $1. Run all_patches.sql in Supabase (SQL Editor)."}],
 [/^Ошибка: (.*)$/,{uk:"Помилка: $1",en:"Error: $1"}],
 [/^Помилка зв'язку з базою: (.*)$/,{uk:"Помилка зв'язку з базою: $1",en:"Database connection error: $1"}]
 ];
@@ -1010,4 +1021,5 @@ document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>{LANG=b.datas
 mo.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title"]});
 applyLang();tickClock();
 
-</script></main></body></html>
+</script><div class="rclk"><span>Реальное время:</span> <b id="rclk" data-ru></b></div>
+</main></body></html>
